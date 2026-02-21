@@ -11,9 +11,9 @@ mod helpers;
 use helpers::*;
 
 
-static WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * PLANET_ORBITAL_RADIUS);
+static WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);
 
-static CENTER_COORDS: DVec2 = DVec2::new(SCALING_FACTOR*0.5*PLANET_ORBITAL_RADIUS, SCALING_FACTOR*0.5*PLANET_ORBITAL_RADIUS);
+static CENTER_COORDS: DVec2 = DVec2::new(SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS, SCALING_FACTOR *0.5* EARTH_ORBITAL_RADIUS);
 
 
 fn gravity_conf() -> Conf {
@@ -46,9 +46,9 @@ async fn main() {
     system[0] = star;
 
     let planet: Particle = Particle {
-        mass: PLANET_MASS,
-        position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]+PLANET_ORBITAL_RADIUS),
-        velocity: DVec2::new(-PLANET_ORBITAL_VELOCITY, 0.),
+        mass: EARTH_MASS,
+        position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]+EARTH_ORBITAL_RADIUS),
+        velocity: DVec2::new(-EARTH_ORBITAL_VELOCITY, 0.),
         radius: PLANET_VISIBLE_RADIUS,
         color: BLUE,
         name: String::from("Earth")

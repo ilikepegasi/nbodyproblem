@@ -4,8 +4,9 @@
 
 // Masses in kilograms
 pub const STAR_MASS: f64 = 1.9891e30;
-pub const PLANET_MASS: f64 = 5.9722e24 ;
+pub const EARTH_MASS: f64 = 5.9722e24 ;
 pub const COMET_MASS: f64 = 2.2e14;
+pub const JUPITER_MASS: f64 = 1.898e27;
 
 
 // Body Radii in meters
@@ -15,11 +16,11 @@ pub const COMET_MASS: f64 = 2.2e14;
 
 
 // Orbital Radii
-pub const PLANET_ORBITAL_RADIUS: f64 = 1.496e11;
-pub static COMET_ORBITAL_RADIUS: f64 = PLANET_ORBITAL_RADIUS * 0.75;
+pub const EARTH_ORBITAL_RADIUS: f64 = 1.496e11;
+pub static COMET_ORBITAL_RADIUS: f64 = EARTH_ORBITAL_RADIUS * 0.75;
  
 // Orbital Velocity in meters / second
-pub const PLANET_ORBITAL_VELOCITY: f64 = 2.978e4;
+pub const EARTH_ORBITAL_VELOCITY: f64 = 2.978e4;
 pub static COMET_ORBITAL_VELOCITY: f64 = 3.44e4;
 
 // Fundamental Constants
