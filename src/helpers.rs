@@ -2,6 +2,9 @@
 use crate::constants::*;
 use macroquad::{color::Color, math::DVec2};
 use std::fs::File;
+use macroquad::prelude::draw_circle;
+
+static WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);
 
 pub struct Particle {
     //Particle struct representing different values of bodies being simulated
@@ -9,6 +12,7 @@ pub struct Particle {
     pub position: DVec2, // In meters
     pub velocity: DVec2, // In meters/second
     pub radius: f64, // In meters
+    pub visible_radius: f32, // In pixels
     pub color: Color,
     pub name: String,
 }
@@ -27,13 +31,13 @@ impl Particle {
         let mut force_vector = DVec2::new(0.,0.);
 
 
-        for body_number in 0..NUMBER_OF_BODIES {
+        for body_number in 0..2{
             // I'm using "identity" to make sure that the force from itself on itself isn't being calculated
             if body_number != identity {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
 
-                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance+1e-10));
+                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance + 1e-10));
                 force_vector += direction * force_magnitude;
 
             }
@@ -41,6 +45,10 @@ impl Particle {
         force_vector
     }
 
+}
+
+pub fn scale(distance: f64) -> f64 {
+    distance * WINDOW_FACTOR
 }
 
 
@@ -88,5 +96,14 @@ pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], my_file: &File) {
 
     wtr.flush().unwrap();
 
+}
+
+pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
+    for i in 0..NUMBER_OF_BODIES {
+        draw_circle(scale(system[i].position[0]) as f32,
+                    scale(system[i].position[1]) as f32,
+                    system[i].visible_radius,
+                    system[i].color);
+    }
 }
 
