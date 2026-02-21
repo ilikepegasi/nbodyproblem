@@ -124,7 +124,7 @@ async fn main() {
 
         // Applies forces to the system
         for i in 0..NUMBER_OF_BODIES {
-            system[i].g_accelerate(forces[i]);
+            system[i].accelerate(forces[i]);
         }
 
 

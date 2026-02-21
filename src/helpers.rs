@@ -20,7 +20,7 @@ pub struct Particle {
 impl Particle {
     // Method changing the values of a particle based on a given force vector
 
-    pub fn g_accelerate(&mut self, force_vector: DVec2) {
+    pub fn accelerate(&mut self, force_vector: DVec2) {
         let acceleration = force_vector / self.mass;
         self.velocity += acceleration * DT;
         self.position += self.velocity * DT;
@@ -31,7 +31,7 @@ impl Particle {
         let mut force_vector = DVec2::new(0.,0.);
 
 
-        for body_number in 0..2{
+        for body_number in 0..NUMBER_OF_BODIES {
             // I'm using "identity" to make sure that the force from itself on itself isn't being calculated
             if body_number != identity {
                 let distance: f64 = (system[body_number].position - self.position).length();
