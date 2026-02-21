@@ -60,7 +60,7 @@ async fn main() {
 
     // Generates a number of comets with varying masses, positions, and velocities
     for i in 2..NUMBER_OF_BODIES {
-        let comet_orbital_radius: f64 = /*gen_range(COMET_VARIANCE_MIN, COMET_VARIANCE_MAX) **/ COMET_ORBITAL_RADIUS;
+        let comet_orbital_radius: f64 = gen_range(COMET_VARIANCE_MIN, COMET_VARIANCE_MAX) * COMET_ORBITAL_RADIUS;
         let angular_position: f64 = gamma * gen_range(0.0, 1.0);
         let comet_x_position: f64 = CENTER_COORDS[0] + angular_position.cos() * comet_orbital_radius;
         let comet_y_position: f64 = CENTER_COORDS[1] + angular_position.sin() * comet_orbital_radius;
@@ -96,12 +96,12 @@ async fn main() {
     let mut old_positions: [Vec2; OLD_FRAME_LIMIT*NUMBER_OF_BODIES] = [Vec2::new(0.,0.); OLD_FRAME_LIMIT*NUMBER_OF_BODIES];
 
 
-    //let my_file = File::create("my_file.csv").unwrap();
+    let my_file = File::create("my_file.csv").unwrap();
 
 
-    //add_topline_data(&system, &my_file);
+    add_topline_data(&system, &my_file);
 
-    //add_physical_data(&system, &my_file, seconds_passed_in_sim);
+    add_physical_data(&system, &my_file, seconds_passed_in_sim);
 
     draw_bodies(&system);
     let mut elapsed = 0.0;
@@ -138,9 +138,9 @@ async fn main() {
 
         // Draws the trail using old_positions
         let draw_count = ticker.min(NUM_OLD_POSITION_LIMIT);
-        /*for i in 0..draw_count {
+        for i in 0..draw_count {
             draw_circle(old_positions[i][0], old_positions[i][1], TRAIL_RADIUS, WHITE);
-        }*/
+        }
         
 
 
@@ -153,9 +153,9 @@ async fn main() {
         let s = format!("Years Passed: {}", &years_passed_in_sim[0..5]);
         draw_text(&s, 10.0, 785.0, 30.0, WHITE);
 
-        //if (ticker / NUMBER_OF_BODIES) < ROW_LIMIT {
-        //    add_physical_data(&system, &my_file, seconds_passed_in_sim);
-        //}
+        if (ticker / NUMBER_OF_BODIES) < ROW_LIMIT {
+            add_physical_data(&system, &my_file, seconds_passed_in_sim);
+        }
 
         next_frame().await
     }
