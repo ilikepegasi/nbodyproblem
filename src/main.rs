@@ -1,14 +1,14 @@
 use macroquad::{prelude::*};
 use rayon::prelude::*;
 use macroquad::rand::gen_range;
-
+use std::fs::File;
 
 mod constants;
 use constants::*;
 
 
 mod helpers;
-use helpers::Particle;
+use helpers::*;
 
 
 static WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * PLANET_ORBITAL_RADIUS);
@@ -33,14 +33,15 @@ async fn main() {
         velocity: DVec2::new(0., 0.),
         radius: 0.,
         color: WHITE,
+        name: String::from("Default")
     });
     let star: Particle = Particle {
         mass: STAR_MASS,
         position: CENTER_COORDS,
         velocity: DVec2::new(0., 0.),
         radius: STAR_VISIBLE_RADIUS,
-        color: YELLOW
-
+        color: YELLOW,
+        name: String::from("Sun")
     };
     system[0] = star;
 
@@ -49,7 +50,8 @@ async fn main() {
         position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]+PLANET_ORBITAL_RADIUS),
         velocity: DVec2::new(-PLANET_ORBITAL_VELOCITY, 0.),
         radius: PLANET_VISIBLE_RADIUS,
-        color: BLUE
+        color: BLUE,
+        name: String::from("Earth")
     };    
     system[1] = planet;
 
@@ -57,7 +59,7 @@ async fn main() {
 
     // Generates a number of comets with varying masses, positions, and velocities
     for i in 2..NUMBER_OF_BODIES {
-        let comet_orbital_radius: f64 = gen_range(0.8 as f64, 1.2 as f64) * COMET_ORBITAL_RADIUS;
+        let comet_orbital_radius: f64 = gen_range(0.8f64, 1.2f64) * COMET_ORBITAL_RADIUS;
         let angular_position: f64 = gamma * gen_range(0.0, 1.0);
         let comet_x_position: f64 = CENTER_COORDS[0] + angular_position.cos() * comet_orbital_radius;
         let comet_y_position: f64 = CENTER_COORDS[1] + angular_position.sin() * comet_orbital_radius;
@@ -76,19 +78,31 @@ async fn main() {
             velocity: comet_angular_velocity,
             radius: COMET_VISIBLE_RADIUS,
             color: GRAY,
+            name: String::from("Comet")
         };
 
         system[i] = new_comet;
     }
 
-    // This ticker will count the amount of frames multiplied by the number of boies
+    // This ticker will count the amount of frames multiplied by the number of bodies
     let mut ticker: usize = 0;
+
+    let mut seconds_passed_in_sim: f64 = 0.;
+
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
     let mut old_positions: [Vec2; OLD_FRAME_LIMIT*NUMBER_OF_BODIES] = [Vec2::new(0.,0.); OLD_FRAME_LIMIT*NUMBER_OF_BODIES];
 
 
-    // let mut file_created: bool = false;
+    let my_file = File::create("my_file.csv").unwrap();
+
+
+    add_topline_data(&system, &my_file);
+
+    add_physical_data(&system, &my_file, seconds_passed_in_sim);
+
+
+
     loop {
         clear_background(BLACK);
 
@@ -132,6 +146,14 @@ async fn main() {
             draw_circle(coord_x, coord_y, system[i].radius as f32, system[i].color);
         }
 
+        seconds_passed_in_sim += DT;
+        let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
+        let s = format!("Years Passed: {}", &years_passed_in_sim[0..5]);
+        draw_text(&s, 10.0, 785.0, 30.0, WHITE);
+
+        if (ticker / NUMBER_OF_BODIES) < ROW_LIMIT {
+            add_physical_data(&system, &my_file, seconds_passed_in_sim);
+        }
 
         next_frame().await
     }

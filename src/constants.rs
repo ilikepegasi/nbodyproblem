@@ -24,6 +24,7 @@ pub static COMET_ORBITAL_VELOCITY: f64 = 3.44e4;
 
 // Fundamental Constants
 pub const G: f64 = 6.674e-11; //meters^3 kilograms^−1 seconds^−2
+pub const SECONDS_IN_YEAR: f64 = 31556926.; // seconds/year
 
 
 
@@ -33,11 +34,15 @@ pub const FRAMERATE: f64 = 1./60.;
 pub const DT: f64 = 1e6 * FRAMERATE;
 
 
+// Data Parameters
+pub const ROW_LIMIT: usize = 1800;
+
+
 // Graphics Parameters
 // pub const VISIBILITY: f32 = 8.;
 pub const SCREEN_SIZE: i32 = 800;
 pub const SCALING_FACTOR: f64 = 2.5;
-pub const OLD_FRAME_LIMIT: usize = (2 as usize).pow(6);
+pub const OLD_FRAME_LIMIT: usize = (2usize).pow(6);
 
 // Body Graphical Sizes
 pub static STAR_VISIBLE_RADIUS: f64 = 30.;
