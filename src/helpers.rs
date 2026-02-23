@@ -179,17 +179,11 @@ pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<
 
     let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] = std::array::from_fn(|_| String::from(""));
     newline[0] = String::from("Time");
-
     newline[1] = String::from("Kinetic Energy");
     newline[2] = String::from("Gravitational Potential Energy");
     newline[3] = String::from("Total Energy");
 
 
-
-
-
-
-    let mut newline: [String; NUMBER_OF_BODIES * 2 + 4] = std::array::from_fn(|_| String::from(""));
     for i in 0..NUMBER_OF_BODIES {
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!("Mass of {}", system[i].name));
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+1] = String::from(format!("Position in X of {}", system[i].name));
