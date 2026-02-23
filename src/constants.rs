@@ -1,4 +1,3 @@
-use csv::QuoteStyle::NonNumeric;
 use macroquad::math::DVec2;
 
 // Masses in kilograms
@@ -51,7 +50,7 @@ pub const ENERGY_INTERVAL: usize = 1;
  pub const VISIBILITY: f32 = 1e9;
 pub const SCREEN_SIZE: i32 = 1000;
 pub const SCALING_FACTOR: f64 = 2.5;
-pub const OLD_FRAME_LIMIT: usize = (2usize).pow(9);
+pub const OLD_FRAME_LIMIT: usize = 2usize.pow(9);
 
 
 // Graphical Sizes

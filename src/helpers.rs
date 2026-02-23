@@ -35,15 +35,10 @@ impl Particle {
         let acceleration = force / self.mass;
         self.velocity += 0.5 * acceleration * DT;
     }
-
-    pub fn accelerate(&mut self, force_vector: DVec2) {
-        let acceleration = force_vector / self.mass;
-        self.velocity += acceleration * DT;
-        self.position += self.velocity * DT;
-    }
+    
 
     // Method calculating total force acting upon a body from the input of the array of
-    // all of the system's bodies
+    // all the system's bodies
     pub fn calculate_g_force(&self, system: &[Particle; NUMBER_OF_BODIES], self_index: usize) -> DVec2 {
         let mut force_vector = DVec2::new(0.,0.);
 
@@ -183,7 +178,7 @@ pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
 
 
 
-pub fn velocity_to_color(velocity: DVec2) -> color::Color {
+pub fn velocity_to_color(velocity: DVec2) -> Color {
     let hue: f32 = 0.0f32.max(0.72f32.min(0.6*(velocity.length() / EARTH_ORBITAL_VELOCITY).powf(2.) as f32));
     color::hsl_to_rgb(hue, 1., 0.5)
 }

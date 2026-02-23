@@ -5,7 +5,6 @@ use std::fs::File;
 mod constants;
 use constants::*;
 use std::io;
-use macroquad::miniquad::window::screen_size;
 
 mod helpers;
 use helpers::*;
@@ -216,8 +215,6 @@ async fn main() {
         // Adds new positions to old_position and iterates ticker
         if trails {
             for i in 0..num_important_bodies {
-                let old_pos_x = system[i].position[0];
-                let old_pos_y = system[i].position[1];
                 trail_values[i][trail_point_counter % OLD_FRAME_LIMIT][0] = system[i].position;
                 trail_values[i][trail_point_counter % OLD_FRAME_LIMIT][1] = system[i].velocity;
             }
@@ -263,10 +260,10 @@ async fn main() {
         draw_bodies(&system);
 
 
-        draw_poly_lines(scale_window(CENTER_COORDS[0]) as f32,
-                        scale_window(CENTER_COORDS[1]) as f32,
+        draw_poly_lines(scale_window(CENTER_COORDS[0]),
+                        scale_window(CENTER_COORDS[1]),
                         64,
-                        scale_window(EARTH_ORBITAL_RADIUS) as f32,
+                        scale_window(EARTH_ORBITAL_RADIUS),
                         0.,
                         1.,
                         RED);
