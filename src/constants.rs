@@ -48,6 +48,7 @@ pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EART
 pub const ROW_LIMIT: usize = 18000;
 pub const ENERGY_INTERVAL: usize = 1;
 pub const LEFT_PAD: usize = 4;
+pub const COLUMNS_PER_OBJECT: usize = 3;
 
 // Graphics Parameters
 pub const SCREEN_SIZE: i32 = 1000;

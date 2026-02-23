@@ -142,13 +142,14 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
 
 pub fn add_physical_data(system: &[Particle; NUMBER_OF_BODIES], time: f64, wtr: &mut Writer<File>, rows: usize) {
 
-    let mut newline: [String; NUMBER_OF_BODIES * 2 + 4] = std::array::from_fn(|_| String::from(""));
+    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] = std::array::from_fn(|_| String::from(""));
 
     newline[0] = time.to_string();
 
     for i in 0..NUMBER_OF_BODIES {
-        newline[2 * i + 4] = system[i].position[0].to_string();
-        newline[2 * i + 5] = system[i].position[1].to_string();
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = system[i].position[0].to_string();
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+1] = system[i].position[1].to_string();
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+2] = system[i].mass.to_string();
     }
 
     if rows % ENERGY_INTERVAL == 0 {
@@ -176,7 +177,7 @@ pub fn add_physical_data(system: &[Particle; NUMBER_OF_BODIES], time: f64, wtr: 
 
 pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<File>) {
 
-    let mut newline: [String; NUMBER_OF_BODIES * 2 + 4] = std::array::from_fn(|_| String::from(""));
+    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] = std::array::from_fn(|_| String::from(""));
     newline[0] = String::from("Time");
 
     newline[1] = String::from("Kinetic Energy");
@@ -184,30 +185,19 @@ pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<
     newline[3] = String::from("Total Energy");
 
 
-    for i in 0..NUMBER_OF_BODIES {
-        newline[2 * i + 4] = system[i].name.clone();
-    }
-    wtr.write_record(newline).unwrap();
+
 
 
 
     let mut newline: [String; NUMBER_OF_BODIES * 2 + 4] = std::array::from_fn(|_| String::from(""));
     for i in 0..NUMBER_OF_BODIES {
-        newline[2 * i + 4] = String::from("Mass");
-        newline[2 * i + 5] = system[i].mass.to_string();
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!("Mass of {}", system[i].name));
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+1] = String::from(format!("Position in X of {}", system[i].name));
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+2] = String::from(format!("Position in Y of {}", system[i].name));
+
     }
     wtr.write_record(newline).unwrap();
-
-
-    let mut newline: [String; NUMBER_OF_BODIES * 2 + 4] = std::array::from_fn(|_| String::from(""));
-    for i in 0..NUMBER_OF_BODIES {
-        newline[2 * i + 4] = String::from("Position in X");
-        newline[2 * i + 5] = String::from("Position in Y");
-    }
-    wtr.write_record(newline).unwrap();
-
     wtr.flush().unwrap();
-
 }
 
 pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
