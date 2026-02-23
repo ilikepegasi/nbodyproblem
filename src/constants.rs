@@ -30,7 +30,7 @@ pub const SECONDS_IN_YEAR: f64 = 31556926.; // seconds/year
 // Simulation Parameters
 pub const NUMBER_OF_BODIES: usize = 1200usize;
 pub const FRAMERATE: f64 = 1./80.;
-pub const DT: f64 = 1e6 * FRAMERATE / TICKS_PER_FRAME as f64;
+pub const DT: f64 = 1e4 / TICKS_PER_FRAME as f64;
 pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
 pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;

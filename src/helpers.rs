@@ -44,7 +44,7 @@ impl Particle {
 
         for body_number in 0..NUMBER_OF_BODIES {
             // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
-            if body_number != self_index && system[body_number].mass > MIN_MASS {
+            if body_number != self_index && system[body_number].mass > MIN_MASS && self.mass > MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
 
@@ -112,18 +112,22 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
     let mut number_of_collisions: u32 = 0;
     for i in 0..NUMBER_OF_BODIES {
         for j in i+1..NUMBER_OF_BODIES {
-            if (system[i].position - system[j].position).length() < system[i].radius + system[j].radius && system[j].mass > 0.0 && system[j].mass > 0.0{
+            if (system[i].position - system[j].position).length() < system[i].radius + system[j].radius && system[j].mass > MIN_MASS && system[j].mass > MIN_MASS{
                 let total_mass = system[i].mass + system[j].mass;
                 system[j].position = (system[i].position * system[i].mass + system[j].position * system[j].mass) / total_mass;
                 system[j].velocity = (system[i].velocity * system[i].mass + system[j].velocity * system[j].mass) / total_mass;
                 let density_i = system[i].mass / system[i].radius.powi(3);
                 let density_j = system[j].mass / system[j].radius.powi(3);
                 let merged_density = (density_i * system[i].mass + density_j * system[j].mass) / total_mass;
-                system[i].radius = (total_mass / merged_density).cbrt();
-                number_of_collisions += 1;
-                println!("Collision!!!!");
-                system[i].color = RED;
+                let total_mass = system[i].mass + system[j].mass;
+                let new_position = (system[i].position * system[i].mass + system[j].position * system[j].mass) / total_mass;
+                let new_velocity = (system[i].velocity * system[i].mass + system[j].velocity * system[j].mass) / total_mass;
+
+                system[i].position = new_position;  // Apply to survivor (i), not j
+                system[i].velocity = new_velocity;
+                system[i].radius = (system[i].radius.powi(3) + system[j].radius.powi(3)).cbrt();
                 system[i].mass = total_mass;
+                system[i].color = RED;
 
                 system[j].mass = 0.0;
                 system[j].radius = 0.0;

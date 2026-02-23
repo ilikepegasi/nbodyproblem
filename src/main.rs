@@ -145,7 +145,10 @@ async fn main() {
         next_frame().await;
         frames_waited += 1;
     }
-
+    println!("DT: {}, TICKS_PER_FRAME: {}, expected years: {}",
+             DT,
+             TICKS_PER_FRAME,
+             DT * TICKS_PER_FRAME as f64 * 18000.0 / 31556926.0);
     loop {
         clear_background(BLACK);
 
@@ -174,7 +177,7 @@ async fn main() {
                 system[i].kick(forces[i]);
                 system[i].update_kinetic_energy();
             }
-            collision_counter += collision_engine(&mut system);
+            if collisions { collision_counter += collision_engine(&mut system) };
 
             seconds_passed_in_sim += DT;
         }
