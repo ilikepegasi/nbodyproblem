@@ -3,6 +3,7 @@ use crate::constants::*;
 use macroquad::{color, color::Color, math::DVec2};
 use std::fs::File;
 use csv::Writer;
+use macroquad::color::RED;
 use macroquad::prelude::draw_circle;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -35,7 +36,7 @@ impl Particle {
         let acceleration = force / self.mass;
         self.velocity += 0.5 * acceleration * DT;
     }
-    
+
 
     // Method calculating total force acting upon a body from the input of the array of
     // all the system's bodies
@@ -44,12 +45,12 @@ impl Particle {
 
 
         for body_number in 0..NUMBER_OF_BODIES {
-            // I'm using "sekf_index" to make sure that the force from itself on itself isn't being calculated
-            if body_number != self_index {
+            // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
+            if body_number != self_index && system[body_number].mass > 0.0 {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
 
-                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance));
+                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance + EPSILON * EPSILON));
                 force_vector += direction * force_magnitude;
 
             }
@@ -60,8 +61,10 @@ impl Particle {
         let mut energy: f64 = 0.;
 
         for body_number in (self_index+1)..NUMBER_OF_BODIES {
-            let distance: f64 = (system[body_number].position - self.position).length();
-            energy += -G * self.mass * system[body_number].mass / (distance);
+            if system[body_number].mass > 0.0 {
+                let distance: f64 = (system[body_number].position - self.position).length();
+                energy += -G * self.mass * system[body_number].mass / (distance);
+            }
         }
 
         energy
@@ -91,10 +94,39 @@ pub fn scale_window(distance: f64) -> f32 {
 pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 {
     let mut total_energy: f64 = 0.;
     for i in 0..NUMBER_OF_BODIES {
-        total_energy += system[i].kinetic_energy;
+        if system[i].mass != 0.0 {
+            total_energy += system[i].kinetic_energy;
+        }
     }
     total_energy
 }
+
+pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
+    let mut number_of_collisions: u32 = 0;
+    for i in 0..NUMBER_OF_BODIES {
+        for j in i+1..NUMBER_OF_BODIES {
+            if (system[i].position - system[j].position).length() < system[i].radius + system[j].radius && system[j].mass > 0.0 && system[j].mass > 0.0{
+                let total_mass = system[i].mass + system[j].mass;
+                system[j].position = (system[i].position * system[i].mass + system[j].position * system[j].mass) / total_mass;
+                system[j].velocity = (system[i].velocity * system[i].mass + system[j].velocity * system[j].mass) / total_mass;
+                system[i].radius = (system[i].radius.powi(3) + system[j].radius.powi(3)).cbrt();
+
+                number_of_collisions += 1;
+                println!("Collision!!!!");
+
+                system[i].mass += system[j].mass;
+                system[i].color = RED;
+                system[i].visible_radius = system[i].visible_radius * 2.;
+                
+                system[j].mass = 0.0;
+                system[j].visible_radius = 0.0;
+                system[j].position = COLLIDED_POSITION;
+            }
+        }
+    }
+    number_of_collisions
+}
+
 
 
 pub fn add_physical_data(system: &[Particle; NUMBER_OF_BODIES], time: f64, wtr: &mut Writer<File>, rows: usize) {

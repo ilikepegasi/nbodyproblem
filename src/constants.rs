@@ -8,7 +8,7 @@ pub const JUPITER_MASS: f64 = 1.898e27;
 
 
 // Body Radii in meters
-pub const EARTH_RADIUS: f64 = 6.3781e6;
+pub const EARTH_RADIUS: f64 = EARTH_ORBITAL_RADIUS / 1000.;//6.3781e6;
 pub const STAR_RADIUS: f64 = 6.957e8;
 pub const COMET_RADIUS: f64 = 7.4e3;
 
@@ -38,7 +38,8 @@ pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
 
 pub const TICKS_PER_FRAME: usize = 3;
 pub const EARTH_NUMBER: usize = NUMBER_OF_BODIES - 1;
-
+pub const EPSILON: f64 = 1e8;
+pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EARTH_ORBITAL_RADIUS * 1e8);
 
 
 
