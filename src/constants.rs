@@ -28,7 +28,7 @@ pub const SECONDS_IN_YEAR: f64 = 31556926.; // seconds/year
 
 
 // Simulation Parameters
-pub const NUMBER_OF_BODIES: usize = 120usize;
+pub const NUMBER_OF_BODIES: usize = 1200usize;
 pub const FRAMERATE: f64 = 1./60.;
 pub const DT: f64 = 1e6 * FRAMERATE / TICKS_PER_FRAME as f64;
 pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
@@ -37,7 +37,7 @@ pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
 
 pub const TICKS_PER_FRAME: usize = 3;
-pub const EARTH_NUMBER: usize = NUMBER_OF_BODIES - 1;
+pub const EARTH_NUMBER: usize = 24;
 pub const EPSILON: f64 = 1e8;
 pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EARTH_ORBITAL_RADIUS * 1e8);
 
@@ -46,6 +46,7 @@ pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EART
 // Data Parameters
 pub const ROW_LIMIT: usize = 18000;
 pub const ENERGY_INTERVAL: usize = 1;
+pub const LEFT_PAD: usize = 4;
 
 // Graphics Parameters
 pub const SCREEN_SIZE: i32 = 1000;

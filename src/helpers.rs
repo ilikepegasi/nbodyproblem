@@ -3,7 +3,6 @@ use crate::constants::*;
 use macroquad::{color, color::Color, math::DVec2};
 use std::fs::File;
 use csv::Writer;
-use macroquad::color::RED;
 use macroquad::prelude::draw_circle;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
@@ -117,13 +116,14 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
                 let total_mass = system[i].mass + system[j].mass;
                 system[j].position = (system[i].position * system[i].mass + system[j].position * system[j].mass) / total_mass;
                 system[j].velocity = (system[i].velocity * system[i].mass + system[j].velocity * system[j].mass) / total_mass;
-                system[i].radius = (system[i].radius.powi(3) + system[j].radius.powi(3)).cbrt();
-
+                let density_i = system[i].mass / system[i].radius.powi(3);
+                let density_j = system[j].mass / system[j].radius.powi(3);
+                let merged_density = (density_i * system[i].mass + density_j * system[j].mass) / total_mass;
+                system[i].radius = (total_mass / merged_density).cbrt();
                 number_of_collisions += 1;
                 println!("Collision!!!!");
 
                 system[i].mass += system[j].mass;
-                system[i].color = RED;
 
                 system[j].mass = 0.0;
                 system[j].radius = 0.0;
