@@ -10,7 +10,7 @@ mod helpers;
 use helpers::*;
 
 
-
+// TODO: Refactor the generation of the bodies into their own function in helpers.rs
 
 
 fn gravity_conf() -> Conf {
@@ -58,7 +58,6 @@ async fn main() {
         position: DVec2::new(0., 0.),
         velocity: DVec2::new(0., 0.),
         radius: 0.,
-        visible_radius: 0.,
         color: WHITE,
         name: String::from("Default"),
         kinetic_energy: 0.
@@ -68,7 +67,6 @@ async fn main() {
         position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]),
         velocity: DVec2::new(0., 0.),
         radius: STAR_RADIUS,
-        visible_radius: STAR_VISIBLE_RADIUS,
         color: YELLOW,
         name: String::from("Sun"),
         kinetic_energy: 0.
@@ -96,9 +94,8 @@ async fn main() {
             position: earth_position,
             velocity: 0.8*earth_velocity,
             radius: EARTH_RADIUS,
-            visible_radius: PLANET_VISIBLE_RADIUS,
             color: BLUE,
-            name: String::from(format!("Focus {}", i+1)),
+            name: String::from(format!("Planet {}", i+1)),
             kinetic_energy: 0.
         };
         new_planet.update_kinetic_energy();
@@ -129,7 +126,6 @@ async fn main() {
             position: comet_position,
             velocity: comet_velocity,
             radius: COMET_RADIUS,
-            visible_radius: SMALL_OBJECT_VISIBLE_RADIUS,
             color: LIGHTGRAY,
             name: String::from(format!("Comet {}", i)),
             kinetic_energy: 0.
@@ -137,6 +133,8 @@ async fn main() {
         new_comet.update_kinetic_energy();
         system[i] = new_comet;
     }
+
+    let mut collision_counter: u32 = 0;
 
     // This ticker will count the amount of frames multiplied by the number of bodies
     let mut trail_point_counter: usize = 0;
@@ -166,7 +164,7 @@ async fn main() {
     }
     draw_bodies(&system);
     let mut frames_waited = 0;
-    while frames_waited < 10*(1./FRAMERATE) as i32 {
+    while frames_waited < 1*(1./FRAMERATE) as i32 {
         draw_bodies(&system);
         next_frame().await;
         frames_waited += 1;
@@ -174,7 +172,6 @@ async fn main() {
 
     loop {
         clear_background(BLACK);
-
 
 
         for _i in 0..TICKS_PER_FRAME {
@@ -200,6 +197,8 @@ async fn main() {
                 system[i].kick(forces[i]);
                 system[i].update_kinetic_energy();
             }
+            collision_counter += collision_engine(&mut system);
+
             seconds_passed_in_sim += DT;
         }
         if file_write {
@@ -210,6 +209,7 @@ async fn main() {
                 }
             }
         }
+
 
 
         // Adds new positions to old_position and iterates ticker
@@ -248,7 +248,6 @@ async fn main() {
                     }
                 }
             }
-
         }
 
 
@@ -269,18 +268,23 @@ async fn main() {
                         RED);
 
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
-        let mut s = format!("Years Passed: {}, Total Physics Ticks: {}",
+        let mut info_on_screen = format!("Years Passed: {} | Total Physics Ticks: {}",
                         &years_passed_in_sim[0..5],
                         total_physics_ticks,
         );
-        draw_text(&s, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
+        draw_text(&info_on_screen, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
         if file_write {
-            s.push_str(&format!(" | Still Writing: {} (with {} rows)",
+            info_on_screen.push_str(&format!(" | Still Writing: {} (with {} rows)",
                             rows_added < ROW_LIMIT,
                             rows_added));
 
         }
-        draw_text(&s, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
+        if collision_counter > 0 {
+            info_on_screen.push_str(&format!(" | Collision Count: {}", collision_counter));
+        }
+
+
+        draw_text(&info_on_screen, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
 
 
         next_frame().await
