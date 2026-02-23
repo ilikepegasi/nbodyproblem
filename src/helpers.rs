@@ -20,7 +20,6 @@ pub struct Particle {
     pub position: DVec2, // In meters
     pub velocity: DVec2, // In meters/second
     pub radius: f64, // In meters
-    pub visible_radius: f32, // In pixels
     pub color: Color,
     pub name: String,
     pub kinetic_energy: f64,
@@ -74,6 +73,15 @@ impl Particle {
         self.kinetic_energy = 0.5 * self.velocity.length().powf(2.) * self.mass;
     }
 
+    pub fn generate_visible_radius(&self) -> f32 {
+        let log_min = SMALL_RADIUS.log10() as f32;
+        let log_max = STAR_RADIUS.log10() as f32;
+        let log_radius = self.radius.log10() as f32;
+
+        let radius_scale = ((log_radius - log_min) / (log_max - log_min)).clamp(0.0, 1.0);
+        MIN_RADIUS_PIXELS + radius_scale.powf(2.0) * (MAX_RADIUS_PIXELS - MIN_RADIUS_PIXELS)
+    }
+
 }
 
 pub fn calculate_orbital_speed(center_object: &Particle, position: DVec2) -> f64 {
@@ -116,10 +124,9 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
 
                 system[i].mass += system[j].mass;
                 system[i].color = RED;
-                system[i].visible_radius = system[i].visible_radius * 2.;
-                
+
                 system[j].mass = 0.0;
-                system[j].visible_radius = 0.0;
+                system[j].radius = 0.0;
                 system[j].position = COLLIDED_POSITION;
             }
         }
@@ -203,7 +210,7 @@ pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
     for i in 0..NUMBER_OF_BODIES {
         draw_circle(scale_window(system[i].position[0]),
                     scale_window(system[i].position[1]),
-                    system[i].visible_radius,
+                    system[i].generate_visible_radius(),
                     system[i].color);
     }
 }

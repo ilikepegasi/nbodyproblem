@@ -8,7 +8,7 @@ pub const JUPITER_MASS: f64 = 1.898e27;
 
 
 // Body Radii in meters
-pub const EARTH_RADIUS: f64 = EARTH_ORBITAL_RADIUS / 1000.;//6.3781e6;
+pub const EARTH_RADIUS: f64 = 6.3781e6;
 pub const STAR_RADIUS: f64 = 6.957e8;
 pub const COMET_RADIUS: f64 = 7.4e3;
 
@@ -48,17 +48,15 @@ pub const ROW_LIMIT: usize = 18000;
 pub const ENERGY_INTERVAL: usize = 1;
 
 // Graphics Parameters
- pub const VISIBILITY: f32 = 1e9;
 pub const SCREEN_SIZE: i32 = 1000;
 pub const SCALING_FACTOR: f64 = 2.5;
 pub const OLD_FRAME_LIMIT: usize = 2usize.pow(9);
-
+pub const SMALL_RADIUS: f64 = COMET_RADIUS/4.;
 
 // Graphical Sizes
-pub const STAR_VISIBLE_RADIUS: f32 = 5.; // In pixels
-pub const PLANET_VISIBLE_RADIUS: f32 = 3.; // In pixels
-pub const SMALL_OBJECT_VISIBLE_RADIUS: f32 = 0.6; // In pixels
 pub const TRAIL_RADIUS: f32 = 1.;
+pub const MAX_RADIUS_PIXELS: f32 = 10.0;
+pub const MIN_RADIUS_PIXELS: f32 = 3.0;
 pub const CENTER_COORDS: DVec2 = DVec2::new(SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS,
    SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS);
 

@@ -10,7 +10,7 @@ mod helpers;
 use helpers::*;
 
 
-
+// TODO: Refactor the generation of the bodies into their own function in helpers.rs
 
 
 fn gravity_conf() -> Conf {
@@ -58,7 +58,6 @@ async fn main() {
         position: DVec2::new(0., 0.),
         velocity: DVec2::new(0., 0.),
         radius: 0.,
-        visible_radius: 0.,
         color: WHITE,
         name: String::from("Default"),
         kinetic_energy: 0.
@@ -68,7 +67,6 @@ async fn main() {
         position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]),
         velocity: DVec2::new(0., 0.),
         radius: STAR_RADIUS,
-        visible_radius: STAR_VISIBLE_RADIUS,
         color: YELLOW,
         name: String::from("Sun"),
         kinetic_energy: 0.
@@ -96,7 +94,6 @@ async fn main() {
             position: earth_position,
             velocity: 0.8*earth_velocity,
             radius: EARTH_RADIUS,
-            visible_radius: PLANET_VISIBLE_RADIUS,
             color: BLUE,
             name: String::from(format!("Planet {}", i+1)),
             kinetic_energy: 0.
@@ -129,7 +126,6 @@ async fn main() {
             position: comet_position,
             velocity: comet_velocity,
             radius: COMET_RADIUS,
-            visible_radius: SMALL_OBJECT_VISIBLE_RADIUS,
             color: LIGHTGRAY,
             name: String::from(format!("Comet {}", i)),
             kinetic_energy: 0.
@@ -176,7 +172,6 @@ async fn main() {
 
     loop {
         clear_background(BLACK);
-
 
 
         for _i in 0..TICKS_PER_FRAME {
@@ -253,7 +248,6 @@ async fn main() {
                     }
                 }
             }
-
         }
 
 
