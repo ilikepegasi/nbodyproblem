@@ -1,11 +1,16 @@
 
 use crate::constants::*;
-use macroquad::{color::Color, math::DVec2};
+use macroquad::{color, color::Color, math::DVec2};
 use std::fs::File;
 use csv::Writer;
 use macroquad::prelude::draw_circle;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 
 static WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);
+
+
+
 
 
 pub struct Particle {
@@ -23,6 +28,14 @@ pub struct Particle {
 impl Particle {
     // Method changing the values of a particle based on a given force vector
 
+    pub fn drift(&mut self) {
+        self.position += self.velocity * DT;
+    }
+    pub fn kick(&mut self, force: DVec2) {
+        let acceleration = force / self.mass;
+        self.velocity += 0.5 * acceleration * DT;
+    }
+
     pub fn accelerate(&mut self, force_vector: DVec2) {
         let acceleration = force_vector / self.mass;
         self.velocity += acceleration * DT;
@@ -31,22 +44,32 @@ impl Particle {
 
     // Method calculating total force acting upon a body from the input of the array of
     // all of the system's bodies
-    pub fn calculate_g_force(&self, system: &[Particle; NUMBER_OF_BODIES], identity: usize) -> DVec2 {
+    pub fn calculate_g_force(&self, system: &[Particle; NUMBER_OF_BODIES], self_index: usize) -> DVec2 {
         let mut force_vector = DVec2::new(0.,0.);
 
 
         for body_number in 0..NUMBER_OF_BODIES {
-            // I'm using "identity" to make sure that the force from itself on itself isn't being calculated
-            if body_number != identity {
+            // I'm using "sekf_index" to make sure that the force from itself on itself isn't being calculated
+            if body_number != self_index {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
 
-                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance + 1e-10));
+                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance));
                 force_vector += direction * force_magnitude;
 
             }
         }
         force_vector
+    }
+    pub fn find_potential_gravitational_energy(&self, system: &[Particle; NUMBER_OF_BODIES], self_index: usize) -> f64 {
+        let mut energy: f64 = 0.;
+
+        for body_number in (self_index+1)..NUMBER_OF_BODIES {
+            let distance: f64 = (system[body_number].position - self.position).length();
+            energy += -G * self.mass * system[body_number].mass / (distance);
+        }
+
+        energy
     }
 
     pub fn update_kinetic_energy(&mut self) {
@@ -63,23 +86,12 @@ pub fn calculate_orbital_speed(center_object: &Particle, position: DVec2) -> f64
 
 
 // This is used to correctly translate from coords in the simulation system into coords for graphics
-pub fn scale_window(distance: f64) -> f64 {
-    distance * WINDOW_FACTOR
+pub fn scale_window(distance: f64) -> f32 {
+    (distance * WINDOW_FACTOR) as f32
 }
 
-pub fn find_system_potential_gravitational_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 {
-    let mut total_energy: f64 = 0.;
 
-    for i in 0..NUMBER_OF_BODIES {
-        for j in (i+1)..NUMBER_OF_BODIES {
-            let distance = (system[i].position - system[j].position).length();
-            let potential_energy = -G * system[i].mass * system[j].mass / distance;
-            total_energy += potential_energy;
-        }
-    }
 
-    total_energy
-}
 
 pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 {
     let mut total_energy: f64 = 0.;
@@ -103,9 +115,12 @@ pub fn add_physical_data(system: &[Particle; NUMBER_OF_BODIES], time: f64, wtr: 
 
     if rows % ENERGY_INTERVAL == 0 {
         let total_kinetic_energy = find_system_kinetic_energy(system);
-        let total_gravitational_energy = find_system_potential_gravitational_energy(system);
-        let total_energy = total_kinetic_energy + total_gravitational_energy;
-
+        let gravitational_energies: Vec<f64> = (0..NUMBER_OF_BODIES)
+            .into_par_iter()
+            .map(|i| system[i].find_potential_gravitational_energy(&system, i))
+            .collect();
+        let total_gravitational_energy: f64 = gravitational_energies.iter().sum();
+        let total_energy: f64 = total_kinetic_energy + total_gravitational_energy;
         newline[1] = total_kinetic_energy.to_string();
         newline[2] = total_gravitational_energy.to_string();
         newline[3] = total_energy.to_string();
@@ -159,10 +174,16 @@ pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<
 
 pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
     for i in 0..NUMBER_OF_BODIES {
-        draw_circle(scale_window(system[i].position[0]) as f32,
-                    scale_window(system[i].position[1]) as f32,
+        draw_circle(scale_window(system[i].position[0]),
+                    scale_window(system[i].position[1]),
                     system[i].visible_radius,
                     system[i].color);
     }
 }
 
+
+
+pub fn velocity_to_color(velocity: DVec2) -> color::Color {
+    let hue: f32 = 0.0f32.max(0.72f32.min(0.6*(velocity.length() / EARTH_ORBITAL_VELOCITY).powf(2.) as f32));
+    color::hsl_to_rgb(hue, 1., 0.5)
+}

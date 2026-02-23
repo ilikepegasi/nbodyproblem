@@ -4,7 +4,8 @@ use macroquad::rand::gen_range;
 use std::fs::File;
 mod constants;
 use constants::*;
-
+use std::io;
+use macroquad::miniquad::window::screen_size;
 
 mod helpers;
 use helpers::*;
@@ -23,6 +24,35 @@ fn gravity_conf() -> Conf {
 }
 #[macroquad::main(gravity_conf)]
 async fn main() {
+    let file_write: bool;
+    let mut input = String::new();
+    loop {
+        println!("Do you want to write results to a file? Yes/No:");
+        input.clear();
+        io::stdin().read_line(&mut input).expect("Failed to read input");
+        let trimmed = input.trim().to_lowercase();
+
+        match trimmed.as_str() {
+            "y" | "yes" => { file_write = true; break; }
+            "n" | "no"  => { file_write = false; break; }
+            _           => println!("Invalid input"),
+        }
+    }
+    let trails: bool;
+
+    loop {
+        println!("Do you want to have trails? Yes/No:");
+        input.clear();
+        io::stdin().read_line(&mut input).expect("Failed to read input");
+        let trimmed = input.trim().to_lowercase();
+
+        match trimmed.as_str() {
+            "y" | "yes" => { trails = true; break; }
+            "n" | "no"  => { trails = false; break; }
+            _           => println!("Invalid input"),
+        }
+    }
+    let mut num_important_bodies = 0;
     // Creating the array of particles representing the system with blank values at first
     let mut system: [Particle; NUMBER_OF_BODIES] = std::array::from_fn(|_| Particle {
         mass: 0.0,
@@ -37,7 +67,7 @@ async fn main() {
     let mut star: Particle = Particle {
         mass: STAR_MASS,
         position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]),
-        velocity: DVec2::new(-0.1*EARTH_ORBITAL_VELOCITY, 0.),
+        velocity: DVec2::new(0., 0.),
         radius: STAR_RADIUS,
         visible_radius: STAR_VISIBLE_RADIUS,
         color: YELLOW,
@@ -46,25 +76,42 @@ async fn main() {
     };
     star.update_kinetic_energy();
     system[0] = star;
+    num_important_bodies += 1;
+    let gamma: f64 = 2.0 * std::f64::consts::PI;
 
-    let mut planet: Particle = Particle {
-        mass: 0.25*STAR_MASS,
-        position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]-EARTH_ORBITAL_RADIUS),
-        velocity: DVec2::new(0.4*EARTH_ORBITAL_VELOCITY, 0.),
-        radius: EARTH_RADIUS,
-        visible_radius: PLANET_VISIBLE_RADIUS,
-        color: BLUE,
-        name: String::from("Earth"),
-        kinetic_energy: 0.
-    };
-    planet.update_kinetic_energy();
-    system[1] = planet;
+    for i in 0..EARTH_NUMBER {
+        let angular_position: f64 = gamma * i as f64 / EARTH_NUMBER as f64;
+        let earth_x_position: f64 = CENTER_COORDS[0] + angular_position.cos() * EARTH_ORBITAL_RADIUS;
+        let earth_y_position: f64 = CENTER_COORDS[1] + angular_position.sin() * EARTH_ORBITAL_RADIUS;
+        let earth_position: DVec2 = DVec2::new(earth_x_position, earth_y_position);
+
+        let velocity_direction: f64 = angular_position + 0.5 * std::f64::consts::PI;
+        let orbital_speed = EARTH_ORBITAL_VELOCITY;
+        let earth_x_velocity: f64 = velocity_direction.cos() * orbital_speed;
+        let earth_y_velocity: f64 = velocity_direction.sin() * orbital_speed;
+
+        let earth_velocity: DVec2 = DVec2::new(earth_x_velocity, earth_y_velocity);
+
+        let mut new_planet: Particle = Particle {
+            mass: EARTH_MASS*2.,
+            position: earth_position,
+            velocity: 0.8*earth_velocity,
+            radius: EARTH_RADIUS,
+            visible_radius: PLANET_VISIBLE_RADIUS,
+            color: BLUE,
+            name: String::from(format!("Focus {}", i+1)),
+            kinetic_energy: 0.
+        };
+        new_planet.update_kinetic_energy();
+        system[i+1] = new_planet;
+        num_important_bodies += 1;
+    }
 
     let gamma: f64 = 2.0 * std::f64::consts::PI;
 
     // Generates a number of comets with varying masses, positions, and velocities
-    for i in 2..NUMBER_OF_BODIES {
-        let comet_orbital_radius: f64 = gen_range(COMET_VARIANCE_MIN, COMET_VARIANCE_MAX) * COMET_ORBITAL_RADIUS;
+    for i in EARTH_NUMBER+1..NUMBER_OF_BODIES {
+        let comet_orbital_radius: f64 = gen_range(COMET_ORBITAL_RADIUS_VARIANCE_MIN, COMET_ORBITAL_RADIUS_VARIANCE_MAX) * COMET_ORBITAL_RADIUS;
         let angular_position: f64 = gamma * gen_range(0.0, 1.0);
         let comet_x_position: f64 = CENTER_COORDS[0] + angular_position.cos() * comet_orbital_radius;
         let comet_y_position: f64 = CENTER_COORDS[1] + angular_position.sin() * comet_orbital_radius;
@@ -77,7 +124,7 @@ async fn main() {
 
         let comet_velocity: DVec2 = DVec2::new(comet_x_velocity, comet_y_velocity);
 
-        let comet_mass: f64 = gen_range(COMET_VARIANCE_MIN, COMET_VARIANCE_MAX) * COMET_MASS;
+        let comet_mass: f64 = gen_range(COMET_MASS_VARIANCE_MIN, COMET_MASS_VARIANCE_MAX) * COMET_MASS;
         let mut new_comet: Particle = Particle {
             mass: comet_mass,
             position: comet_position,
@@ -93,31 +140,37 @@ async fn main() {
     }
 
     // This ticker will count the amount of frames multiplied by the number of bodies
-    let mut ticker: usize = 0;
+    let mut trail_point_counter: usize = 0;
 
-    let mut seconds_passed_in_sim: f64 = 0.;
+    let mut total_physics_ticks: usize = 0;
+    let mut seconds_passed_in_sim: f64 = 0.0;
 
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
-    let mut old_positions: [Vec2; NUM_OLD_POSITION_LIMIT] =
-        [Vec2::new(0.,0.); NUM_OLD_POSITION_LIMIT];
+    let mut trail_values = vec![vec![vec![DVec2::new(0., 0.), DVec2::new(0., 0.)]; OLD_FRAME_LIMIT]; num_important_bodies];
 
-
-    let my_file = File::create("my_file.csv").unwrap();
-
-    let mut wtr = csv::Writer::from_writer(my_file);
-
-    add_topline_data(&system, &mut wtr);
+    let my_file = if file_write {
+        Some(File::create("orbital_simulation.csv").unwrap())
+    } else {
+        None
+    };
     let mut rows_added = 0;
 
-    add_physical_data(&system, seconds_passed_in_sim, &mut wtr, rows_added);
-    rows_added += 1;
+    let mut wtr = my_file.map(|f| csv::Writer::from_writer(f));
+    if file_write {
+        if let Some(ref mut w) = wtr {
+            add_topline_data(&system, w);
+            add_physical_data(&system, seconds_passed_in_sim, w, rows_added);
+        }
+        rows_added += 1;
+
+    }
     draw_bodies(&system);
-    let mut elapsed = 0.0;
-    while elapsed < 1.0 {
-        elapsed += get_frame_time();
+    let mut frames_waited = 0;
+    while frames_waited < 10*(1./FRAMERATE) as i32 {
         draw_bodies(&system);
         next_frame().await;
+        frames_waited += 1;
     }
 
     loop {
@@ -125,33 +178,80 @@ async fn main() {
 
 
 
+        for _i in 0..TICKS_PER_FRAME {
+            total_physics_ticks += 1;
+            // Parallel calculation of all the forces acting on the bodies using the calculate_g_force method
+            let forces: Vec<DVec2> = (0..NUMBER_OF_BODIES)
+                .into_par_iter()
+                .map(|i| system[i].calculate_g_force(&system, i))
+                .collect();
 
-        // Parallel calculation of all the forces acting on the bodies using the calculate_g_force method
-        let forces: Vec<DVec2> = (0..NUMBER_OF_BODIES)
-            .into_par_iter()
-            .map(|i| system[i].calculate_g_force(&system, i))
-            .collect();
-
-        // Applies forces to the system
-        for i in 0..NUMBER_OF_BODIES {
-            system[i].accelerate(forces[i]);
-            system[i].update_kinetic_energy();
+            // Applies forces to the system
+            for i in 0..NUMBER_OF_BODIES {
+                system[i].kick(forces[i]);
+            }
+            for i in 0..NUMBER_OF_BODIES {
+                system[i].drift();
+            }
+            let forces: Vec<DVec2> = (0..NUMBER_OF_BODIES)
+                .into_par_iter()
+                .map(|i| system[i].calculate_g_force(&system, i))
+                .collect();
+            for i in 0..NUMBER_OF_BODIES {
+                system[i].kick(forces[i]);
+                system[i].update_kinetic_energy();
+            }
+            seconds_passed_in_sim += DT;
+        }
+        if file_write {
+            if let Some(ref mut w) = wtr {
+                if rows_added < ROW_LIMIT {
+                    add_physical_data(&system, seconds_passed_in_sim, w, rows_added);
+                    rows_added += 1;
+                }
+            }
         }
 
 
         // Adds new positions to old_position and iterates ticker
-        if TRAILS {
-            for i in 0..NUMBER_OF_BODIES {
-                let old_pos_x = scale_window(system[i].position[0]) as f32;
-                let old_pos_y = scale_window(system[i].position[1]) as f32;
-                old_positions[ticker % (NUM_OLD_POSITION_LIMIT)] = Vec2::new(old_pos_x, old_pos_y);
-                ticker += 1;
+        if trails {
+            for i in 0..num_important_bodies {
+                let old_pos_x = system[i].position[0];
+                let old_pos_y = system[i].position[1];
+                trail_values[i][trail_point_counter % OLD_FRAME_LIMIT][0] = system[i].position;
+                trail_values[i][trail_point_counter % OLD_FRAME_LIMIT][1] = system[i].velocity;
             }
+            trail_point_counter += 1;
+
+            let recent_point = trail_point_counter % OLD_FRAME_LIMIT;
+            let gap_point = if recent_point == 0 { OLD_FRAME_LIMIT - 1 } else { recent_point - 1 };
             // Draws the trail using old_positions
-            let draw_count = ticker.min(NUM_OLD_POSITION_LIMIT);
-            for i in 0..draw_count {
-                draw_circle(old_positions[i][0], old_positions[i][1], TRAIL_RADIUS, WHITE);
+            if trail_point_counter < OLD_FRAME_LIMIT {
+                for i in 0..trail_point_counter {
+                    for j in 0..num_important_bodies {
+                        draw_circle(scale_window(trail_values[j][i][0][0]),
+                                    scale_window(trail_values[j][i][0][1]),
+                                    TRAIL_RADIUS,
+                                    velocity_to_color(trail_values[j][i][1]));
+                    }
+                }
+            } else {
+                for i in 0..num_important_bodies {
+                    for j in 0..OLD_FRAME_LIMIT {
+                        if j != gap_point {
+                            let pos_1 = trail_values[i][j][0];
+                            let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
+                            draw_line(scale_window(pos_1[0]),
+                                      scale_window(pos_1[1]),
+                                      scale_window(pos_2[0]),
+                                      scale_window(pos_2[1]),
+                                      TRAIL_RADIUS,
+                                      velocity_to_color(trail_values[i][j][1]));
+                        }
+                    }
+                }
             }
+
         }
 
 
@@ -171,18 +271,20 @@ async fn main() {
                         1.,
                         RED);
 
-        seconds_passed_in_sim += DT;
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
-        let s = format!("Years Passed: {} | Still Writing: {} (with {} rows)",
+        let mut s = format!("Years Passed: {}, Total Physics Ticks: {}",
                         &years_passed_in_sim[0..5],
-                        rows_added < ROW_LIMIT,
-                        rows_added);
-        draw_text(&s, 10.0, 790.0, 20.0, WHITE);
+                        total_physics_ticks,
+        );
+        draw_text(&s, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
+        if file_write {
+            s.push_str(&format!(" | Still Writing: {} (with {} rows)",
+                            rows_added < ROW_LIMIT,
+                            rows_added));
 
-        if rows_added < ROW_LIMIT && FILE_WRITE{
-            add_physical_data(&system, seconds_passed_in_sim, &mut wtr, rows_added);
-            rows_added += 1;
         }
+        draw_text(&s, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
+
 
         next_frame().await
     }
