@@ -12,6 +12,7 @@ use helpers::*;
 // TODO: Refactor the generation of the bodies into their own function in helpers.rs
 // TODO: Make collisions disablable from user io
 
+// TODO: Normalize colors better
 
 fn gravity_conf() -> Conf {
       Conf {
@@ -75,7 +76,7 @@ async fn main() {
         };
         new_planet.update_kinetic_energy();
         system[i+1] = new_planet;
-        num_important_bodies += 1;
+        if system[i+1].mass >= 0.2 * EARTH_MASS {num_important_bodies += 1;};
     }
 
     let gamma: f64 = 2.0 * std::f64::consts::PI;

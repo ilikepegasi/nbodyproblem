@@ -4,7 +4,7 @@ use macroquad::{color, color::Color, math::DVec2};
 use std::fs::File;
 use std::io;
 use csv::Writer;
-use macroquad::prelude::{draw_circle, draw_line};
+use macroquad::prelude::*;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 
@@ -44,7 +44,7 @@ impl Particle {
 
         for body_number in 0..NUMBER_OF_BODIES {
             // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
-            if body_number != self_index && system[body_number].mass > 0.0 {
+            if body_number != self_index && system[body_number].mass > MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
 
@@ -59,7 +59,7 @@ impl Particle {
         let mut energy: f64 = 0.;
 
         for body_number in (self_index+1)..NUMBER_OF_BODIES {
-            if system[body_number].mass > 0.0 {
+            if system[body_number].mass > MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 energy += -G * self.mass * system[body_number].mass / (distance);
             }
@@ -122,8 +122,8 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
                 system[i].radius = (total_mass / merged_density).cbrt();
                 number_of_collisions += 1;
                 println!("Collision!!!!");
-
-                system[i].mass += system[j].mass;
+                system[i].color = RED;
+                system[i].mass = total_mass;
 
                 system[j].mass = 0.0;
                 system[j].radius = 0.0;
@@ -251,21 +251,13 @@ pub fn draw_trails(num_important_bodies: usize, system: &[Particle; 1200], trail
     let recent_point = *trail_point_counter % OLD_FRAME_LIMIT;
     let gap_point = if recent_point == 0 { OLD_FRAME_LIMIT - 1 } else { recent_point - 1 };
     // Draws the trail using old_positions
-    if *trail_point_counter < OLD_FRAME_LIMIT {
-        for i in 0..*trail_point_counter {
-            for j in 0..num_important_bodies {
-                draw_circle(scale_window(trail_values[j][i][0][0]),
-                            scale_window(trail_values[j][i][0][1]),
-                            TRAIL_RADIUS,
-                            velocity_to_color(trail_values[j][i][1]));
-            }
-        }
-    } else {
-        for i in 0..num_important_bodies {
-            for j in 0..OLD_FRAME_LIMIT {
-                if j != gap_point {
-                    let pos_1 = trail_values[i][j][0];
-                    let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
+
+    for i in 0..num_important_bodies {
+        for j in 0..OLD_FRAME_LIMIT.min(*trail_point_counter) {
+            if j != gap_point {
+                let pos_1 = trail_values[i][j][0];
+                let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
+                if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
                     draw_line(scale_window(pos_1[0]),
                               scale_window(pos_1[1]),
                               scale_window(pos_2[0]),
