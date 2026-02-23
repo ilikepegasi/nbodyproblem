@@ -29,7 +29,7 @@ pub const SECONDS_IN_YEAR: f64 = 31556926.; // seconds/year
 
 // Simulation Parameters
 pub const NUMBER_OF_BODIES: usize = 1200usize;
-pub const FRAMERATE: f64 = 1./60.;
+pub const FRAMERATE: f64 = 1./80.;
 pub const DT: f64 = 1e6 * FRAMERATE / TICKS_PER_FRAME as f64;
 pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
@@ -52,12 +52,14 @@ pub const LEFT_PAD: usize = 4;
 pub const SCREEN_SIZE: i32 = 1000;
 pub const SCALING_FACTOR: f64 = 2.5;
 pub const OLD_FRAME_LIMIT: usize = 2usize.pow(9);
-pub const SMALL_RADIUS: f64 = COMET_RADIUS/4.;
+pub const SMALL_RADIUS: f64 = COMET_RADIUS;
+pub const WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);
+
 
 // Graphical Sizes
 pub const TRAIL_RADIUS: f32 = 1.;
-pub const MAX_RADIUS_PIXELS: f32 = 10.0;
-pub const MIN_RADIUS_PIXELS: f32 = 3.0;
+pub const MAX_RADIUS_PIXELS: f32 = 8.0;
+pub const MIN_RADIUS_PIXELS: f32 = 1.0;
 pub const CENTER_COORDS: DVec2 = DVec2::new(SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS,
    SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS);
 

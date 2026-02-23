@@ -1,16 +1,16 @@
-use macroquad::{prelude::*};
+use macroquad::prelude::*;
 use rayon::prelude::*;
 use macroquad::rand::gen_range;
 use std::fs::File;
 mod constants;
 use constants::*;
-use std::io;
 
 mod helpers;
 use helpers::*;
 
 
 // TODO: Refactor the generation of the bodies into their own function in helpers.rs
+// TODO: Make collisions disablable from user io
 
 
 fn gravity_conf() -> Conf {
@@ -23,34 +23,9 @@ fn gravity_conf() -> Conf {
 }
 #[macroquad::main(gravity_conf)]
 async fn main() {
-    let file_write: bool;
-    let mut input = String::new();
-    loop {
-        println!("Do you want to write results to a file? Yes/No:");
-        input.clear();
-        io::stdin().read_line(&mut input).expect("Failed to read input");
-        let trimmed = input.trim().to_lowercase();
-
-        match trimmed.as_str() {
-            "y" | "yes" => { file_write = true; break; }
-            "n" | "no"  => { file_write = false; break; }
-            _           => println!("Invalid input"),
-        }
-    }
-    let trails: bool;
-
-    loop {
-        println!("Do you want to have trails? Yes/No:");
-        input.clear();
-        io::stdin().read_line(&mut input).expect("Failed to read input");
-        let trimmed = input.trim().to_lowercase();
-
-        match trimmed.as_str() {
-            "y" | "yes" => { trails = true; break; }
-            "n" | "no"  => { trails = false; break; }
-            _           => println!("Invalid input"),
-        }
-    }
+    let file_write = take_user_choice("Do you want to write to a file? ");
+    let trails = take_user_choice("Do you want to have trails? ");
+    let collisions = take_user_choice("Do you want to have collisions? ");
     let mut num_important_bodies = 0;
     // Creating the array of particles representing the system with blank values at first
     let mut system: [Particle; NUMBER_OF_BODIES] = std::array::from_fn(|_| Particle {
@@ -138,7 +113,7 @@ async fn main() {
 
     // This ticker will count the amount of frames multiplied by the number of bodies
     let mut trail_point_counter: usize = 0;
-
+    let mut frames_passed = 0;
     let mut total_physics_ticks: usize = 0;
     let mut seconds_passed_in_sim: f64 = 0.0;
 
@@ -164,7 +139,7 @@ async fn main() {
     }
     draw_bodies(&system);
     let mut frames_waited = 0;
-    while frames_waited < 1*(1./FRAMERATE) as i32 {
+    while frames_waited < 0*(1./FRAMERATE) as i32 {
         draw_bodies(&system);
         next_frame().await;
         frames_waited += 1;
@@ -176,7 +151,8 @@ async fn main() {
 
         for _i in 0..TICKS_PER_FRAME {
             total_physics_ticks += 1;
-            // Parallel calculation of all the forces acting on the bodies using the calculate_g_force method
+            /* Parallel calculation of all the forces acting on the bodies using the
+            calculate_g_force method */
             let forces: Vec<DVec2> = (0..NUMBER_OF_BODIES)
                 .into_par_iter()
                 .map(|i| system[i].calculate_g_force(&system, i))
@@ -212,42 +188,8 @@ async fn main() {
 
 
 
-        // Adds new positions to old_position and iterates ticker
         if trails {
-            for i in 0..num_important_bodies {
-                trail_values[i][trail_point_counter % OLD_FRAME_LIMIT][0] = system[i].position;
-                trail_values[i][trail_point_counter % OLD_FRAME_LIMIT][1] = system[i].velocity;
-            }
-            trail_point_counter += 1;
-
-            let recent_point = trail_point_counter % OLD_FRAME_LIMIT;
-            let gap_point = if recent_point == 0 { OLD_FRAME_LIMIT - 1 } else { recent_point - 1 };
-            // Draws the trail using old_positions
-            if trail_point_counter < OLD_FRAME_LIMIT {
-                for i in 0..trail_point_counter {
-                    for j in 0..num_important_bodies {
-                        draw_circle(scale_window(trail_values[j][i][0][0]),
-                                    scale_window(trail_values[j][i][0][1]),
-                                    TRAIL_RADIUS,
-                                    velocity_to_color(trail_values[j][i][1]));
-                    }
-                }
-            } else {
-                for i in 0..num_important_bodies {
-                    for j in 0..OLD_FRAME_LIMIT {
-                        if j != gap_point {
-                            let pos_1 = trail_values[i][j][0];
-                            let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
-                            draw_line(scale_window(pos_1[0]),
-                                      scale_window(pos_1[1]),
-                                      scale_window(pos_2[0]),
-                                      scale_window(pos_2[1]),
-                                      TRAIL_RADIUS,
-                                      velocity_to_color(trail_values[i][j][1]));
-                        }
-                    }
-                }
-            }
+            draw_trails(num_important_bodies, &system, &mut trail_point_counter, &mut trail_values);
         }
 
 
@@ -258,7 +200,7 @@ async fn main() {
         // Draws main bodies
         draw_bodies(&system);
 
-
+        // Helper circle around Earth's orbit
         draw_poly_lines(scale_window(CENTER_COORDS[0]),
                         scale_window(CENTER_COORDS[1]),
                         64,
@@ -285,8 +227,8 @@ async fn main() {
 
 
         draw_text(&info_on_screen, 10.0, (SCREEN_SIZE-80) as f32, 20.0, WHITE);
-
-
+        frames_passed += 1;
+        draw_fps();
         next_frame().await
     }
 
@@ -295,3 +237,4 @@ async fn main() {
 
 
 }
+

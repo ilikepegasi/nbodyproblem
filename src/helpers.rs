@@ -2,12 +2,12 @@
 use crate::constants::*;
 use macroquad::{color, color::Color, math::DVec2};
 use std::fs::File;
+use std::io;
 use csv::Writer;
-use macroquad::prelude::draw_circle;
+use macroquad::prelude::{draw_circle, draw_line};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 
-static WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);
 
 
 
@@ -78,7 +78,7 @@ impl Particle {
         let log_radius = self.radius.log10() as f32;
 
         let radius_scale = ((log_radius - log_min) / (log_max - log_min)).clamp(0.0, 1.0);
-        MIN_RADIUS_PIXELS + radius_scale.powf(2.0) * (MAX_RADIUS_PIXELS - MIN_RADIUS_PIXELS)
+        MIN_RADIUS_PIXELS + radius_scale * (MAX_RADIUS_PIXELS - MIN_RADIUS_PIXELS)
     }
 
 }
@@ -217,7 +217,63 @@ pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
 
 
 
+pub fn take_user_choice(question: &str) -> bool {
+    let answer;
+    let mut input = String::new();
+    loop {
+        println!("{}", question);
+        input.clear();
+        io::stdin().read_line(&mut input).expect("Failed to read input");
+        let trimmed = input.trim().to_lowercase();
+
+        match trimmed.as_str() {
+            "y" | "yes" => { answer = true; break; }
+            "n" | "no"  => { answer = false; break; }
+            _           => println!("Invalid input"),
+        }
+    }
+    answer
+}
+
+
 pub fn velocity_to_color(velocity: DVec2) -> Color {
     let hue: f32 = 0.0f32.max(0.72f32.min(0.6*(velocity.length() / EARTH_ORBITAL_VELOCITY).powf(2.) as f32));
     color::hsl_to_rgb(hue, 1., 0.5)
+}
+
+pub fn draw_trails(num_important_bodies: usize, system: &[Particle; 1200], trail_point_counter: &mut usize, trail_values: &mut Vec<Vec<Vec<DVec2>>>) {
+    for i in 0..num_important_bodies {
+        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT][0] = system[i].position;
+        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT][1] = system[i].velocity;
+    }
+    *trail_point_counter += 1;
+
+    let recent_point = *trail_point_counter % OLD_FRAME_LIMIT;
+    let gap_point = if recent_point == 0 { OLD_FRAME_LIMIT - 1 } else { recent_point - 1 };
+    // Draws the trail using old_positions
+    if *trail_point_counter < OLD_FRAME_LIMIT {
+        for i in 0..*trail_point_counter {
+            for j in 0..num_important_bodies {
+                draw_circle(scale_window(trail_values[j][i][0][0]),
+                            scale_window(trail_values[j][i][0][1]),
+                            TRAIL_RADIUS,
+                            velocity_to_color(trail_values[j][i][1]));
+            }
+        }
+    } else {
+        for i in 0..num_important_bodies {
+            for j in 0..OLD_FRAME_LIMIT {
+                if j != gap_point {
+                    let pos_1 = trail_values[i][j][0];
+                    let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
+                    draw_line(scale_window(pos_1[0]),
+                              scale_window(pos_1[1]),
+                              scale_window(pos_2[0]),
+                              scale_window(pos_2[1]),
+                              TRAIL_RADIUS,
+                              velocity_to_color(trail_values[i][j][1]));
+                }
+            }
+        }
+    }
 }
