@@ -1,4 +1,4 @@
-use macroquad::color::{Color, BLUE};
+use macroquad::color::*;
 use macroquad::math::DVec2;
 use macroquad::rand::gen_range;
 use crate::constants::*;
