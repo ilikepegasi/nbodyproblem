@@ -4,13 +4,29 @@ use macroquad::rand::gen_range;
 use crate::constants::*;
 use crate::helpers::Particle;
 use std::f64::consts::TAU;
-pub fn initialize_bodies_spiro(num_bodies_added: usize, system: &mut [Particle; NUMBER_OF_BODIES]) {
-    let comet_orbital_radius: f64 = gen_range(
-        COMET_ORBITAL_RADIUS_VARIANCE_MIN,
-        COMET_ORBITAL_RADIUS_VARIANCE_MAX,
-    ) * COMET_ORBITAL_RADIUS;
+pub enum Variance {
+    With_Variance (f64, f64), // (Min Variance, Max Variance)
+    No_Variance,
+}
+
+
+pub fn initialize_bodies_spiro(num_bodies_added: usize,
+                               orbital_radius: f64,
+                               mass: f64,
+                               system: &mut [Particle; NUMBER_OF_BODIES],
+                               radius_variance: Variance,
+                               mass_variance: Variance,
+) -> usize /* This will return the amount of significant bodies added */ {
+
+    if let Variance::With_Variance(min_variance, max_variance) = radius_variance {
+        let orbital_radius = orbital_radius * gen_range(min_variance, max_variance);
+    }
+    if let Variance::With_Variance(min_variance, max_variance) = mass_variance {
+        let mass = mass * gen_range(min_variance, max_variance);
+    }
+
     for i in 0..EARTH_NUMBER {
-        let angular_position: f64 = TAU * i as f64 / EARTH_NUMBER as f64;
+        let angular_position: f64 = TAU * i as f64 / num_bodies_added as f64;
         let earth_x_position: f64 =
             CENTER_COORDS[0] + angular_position.cos() * EARTH_ORBITAL_RADIUS;
         let earth_y_position: f64 =
