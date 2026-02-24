@@ -1,24 +1,17 @@
-
 use crate::constants::*;
-use macroquad::{color, color::Color, math::DVec2};
-use std::fs::File;
-use std::io;
 use csv::Writer;
 use macroquad::prelude::*;
+use macroquad::{color, color::Color, math::DVec2};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-
-
-
-
-
-
+use std::fs::File;
+use std::io;
 
 pub struct Particle {
     //Particle struct representing different values of bodies being simulated
-    pub mass: f64, //kg
+    pub mass: f64,       //kg
     pub position: DVec2, // In meters
     pub velocity: DVec2, // In meters/second
-    pub radius: f64, // In meters
+    pub radius: f64,     // In meters
     pub color: Color,
     pub name: String,
     pub kinetic_energy: f64,
@@ -35,31 +28,41 @@ impl Particle {
         self.velocity += 0.5 * acceleration * DT;
     }
 
-
     // Method calculating total force acting upon a body from the input of the array of
     // all the system's bodies
-    pub fn calculate_g_force(&self, system: &[Particle; NUMBER_OF_BODIES], self_index: usize) -> DVec2 {
-        let mut force_vector = DVec2::new(0.,0.);
-
+    pub fn calculate_g_force(
+        &self,
+        system: &[Particle; NUMBER_OF_BODIES],
+        self_index: usize,
+    ) -> DVec2 {
+        let mut force_vector = DVec2::new(0., 0.);
 
         for body_number in 0..NUMBER_OF_BODIES {
             // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
-            if body_number != self_index && system[body_number].mass > MIN_MASS && self.mass > MIN_MASS {
+            if body_number != self_index
+                && system[body_number].mass > MIN_MASS
+                && self.mass > MIN_MASS
+            {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
 
-                let force_magnitude: f64 = G * ((system[body_number].mass * self.mass) / (distance*distance + EPSILON * EPSILON));
+                let force_magnitude: f64 = G
+                    * ((system[body_number].mass * self.mass)
+                        / (distance * distance + EPSILON * EPSILON));
                 force_vector += direction * force_magnitude;
-
             }
         }
         force_vector
     }
-    pub fn find_potential_gravitational_energy(&self, system: &[Particle; NUMBER_OF_BODIES], self_index: usize) -> f64 {
+    pub fn find_potential_gravitational_energy(
+        &self,
+        system: &[Particle; NUMBER_OF_BODIES],
+        self_index: usize,
+    ) -> f64 {
         let mut energy: f64 = 0.;
 
-        for body_number in (self_index+1)..NUMBER_OF_BODIES {
-            if system[body_number].mass > MIN_MASS {
+        for body_number in (self_index + 1)..NUMBER_OF_BODIES {
+            if system[body_number].mass > MIN_MASS && self.mass > MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 energy += -G * self.mass * system[body_number].mass / (distance);
             }
@@ -80,7 +83,6 @@ impl Particle {
         let radius_scale = ((log_radius - log_min) / (log_max - log_min)).clamp(0.0, 1.0);
         MIN_RADIUS_PIXELS + radius_scale * (MAX_RADIUS_PIXELS - MIN_RADIUS_PIXELS)
     }
-
 }
 
 pub fn calculate_orbital_speed(center_object: &Particle, position: DVec2) -> f64 {
@@ -89,14 +91,10 @@ pub fn calculate_orbital_speed(center_object: &Particle, position: DVec2) -> f64
     speed
 }
 
-
 // This is used to correctly translate from coords in the simulation system into coords for graphics
 pub fn scale_window(distance: f64) -> f32 {
     (distance * WINDOW_FACTOR) as f32
 }
-
-
-
 
 pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 {
     let mut total_energy: f64 = 0.;
@@ -109,47 +107,60 @@ pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 
 }
 
 pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
-    let mut number_of_collisions: u32 = 0;
+    let number_of_collisions: u32 = 0;
     for i in 0..NUMBER_OF_BODIES {
-        for j in i+1..NUMBER_OF_BODIES {
-            if (system[i].position - system[j].position).length() < system[i].radius + system[j].radius && system[j].mass > MIN_MASS && system[j].mass > MIN_MASS{
+        for j in i + 1..NUMBER_OF_BODIES {
+            if (system[i].position - system[j].position).length()
+                < system[i].radius + system[j].radius
+                && system[j].mass > MIN_MASS
+                && system[j].mass > MIN_MASS
+            {
                 let total_mass = system[i].mass + system[j].mass;
-                system[j].position = (system[i].position * system[i].mass + system[j].position * system[j].mass) / total_mass;
-                system[j].velocity = (system[i].velocity * system[i].mass + system[j].velocity * system[j].mass) / total_mass;
-                let density_i = system[i].mass / system[i].radius.powi(3);
-                let density_j = system[j].mass / system[j].radius.powi(3);
-                let merged_density = (density_i * system[i].mass + density_j * system[j].mass) / total_mass;
-                let total_mass = system[i].mass + system[j].mass;
-                let new_position = (system[i].position * system[i].mass + system[j].position * system[j].mass) / total_mass;
-                let new_velocity = (system[i].velocity * system[i].mass + system[j].velocity * system[j].mass) / total_mass;
+                let new_position = (system[i].position * system[i].mass
+                    + system[j].position * system[j].mass)
+                    / total_mass;
+                let new_velocity = (system[i].velocity * system[i].mass
+                    + system[j].velocity * system[j].mass)
+                    / total_mass;
+                let (collider_object, dead_object) = if system[i].mass >= system[j].mass {
+                    (i, j)
+                } else {
+                    (j, i)
+                };
+                system[collider_object].position = new_position;
+                system[collider_object].velocity = new_velocity;
+                system[collider_object].radius = (system[collider_object].radius.powi(3)
+                    + system[dead_object].radius.powi(3))
+                .cbrt();
+                if system[dead_object].mass > (0.1 * system[collider_object].mass) {
+                    system[collider_object].color = RED
+                };
 
-                system[i].position = new_position;  // Apply to survivor (i), not j
-                system[i].velocity = new_velocity;
-                system[i].radius = (system[i].radius.powi(3) + system[j].radius.powi(3)).cbrt();
-                system[i].mass = total_mass;
-                system[i].color = RED;
+                system[collider_object].mass = total_mass;
 
-                system[j].mass = 0.0;
-                system[j].radius = 0.0;
-                system[j].position = COLLIDED_POSITION;
+                system[dead_object].mass = 0.0;
+                system[dead_object].radius = 0.0;
+                system[dead_object].position = COLLIDED_POSITION;
             }
         }
     }
     number_of_collisions
 }
 
-
-
-pub fn add_physical_data(system: &[Particle; NUMBER_OF_BODIES], time: f64, wtr: &mut Writer<File>, rows: usize) {
-
-    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] = std::array::from_fn(|_| String::from(""));
+pub fn add_physical_data(
+    system: &[Particle; NUMBER_OF_BODIES],
+    time: f64,
+    wtr: &mut Writer<File>,
+    rows: usize,
+) {
+    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] =
+        std::array::from_fn(|_| String::from(""));
 
     newline[0] = time.to_string();
 
     for i in 0..NUMBER_OF_BODIES {
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = system[i].position[0].to_string();
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+1] = system[i].position[1].to_string();
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+2] = system[i].mass.to_string();
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] = system[i].position[1].to_string();
     }
 
     if rows % ENERGY_INTERVAL == 0 {
@@ -169,26 +180,27 @@ pub fn add_physical_data(system: &[Particle; NUMBER_OF_BODIES], time: f64, wtr: 
         newline[3] = String::from("NaN");
     }
 
-
-
     wtr.write_record(newline).unwrap();
     wtr.flush().unwrap();
 }
 
 pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<File>) {
-
-    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] = std::array::from_fn(|_| String::from(""));
+    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] =
+        std::array::from_fn(|_| String::from(""));
     newline[0] = String::from("Time");
     newline[1] = String::from("Kinetic Energy");
     newline[2] = String::from("Gravitational Potential Energy");
     newline[3] = String::from("Total Energy");
 
-
     for i in 0..NUMBER_OF_BODIES {
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!("Mass of {}", system[i].name));
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+1] = String::from(format!("Position in X of {}", system[i].name));
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD+2] = String::from(format!("Position in Y of {}", system[i].name));
-
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!(
+            "Position in X of {} with mass {:2e}",
+            system[i].name, system[i].mass
+        ));
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] = String::from(format!(
+            "Position in Y of {} with mass {:2e}",
+            system[i].name, system[i].mass
+        ));
     }
     wtr.write_record(newline).unwrap();
     wtr.flush().unwrap();
@@ -196,14 +208,14 @@ pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<
 
 pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
     for i in 0..NUMBER_OF_BODIES {
-        draw_circle(scale_window(system[i].position[0]),
-                    scale_window(system[i].position[1]),
-                    system[i].generate_visible_radius(),
-                    system[i].color);
+        draw_circle(
+            scale_window(system[i].position[0]),
+            scale_window(system[i].position[1]),
+            system[i].generate_visible_radius(),
+            system[i].color,
+        );
     }
 }
-
-
 
 pub fn take_user_choice(question: &str) -> bool {
     let answer;
@@ -211,25 +223,45 @@ pub fn take_user_choice(question: &str) -> bool {
     loop {
         println!("{}", question);
         input.clear();
-        io::stdin().read_line(&mut input).expect("Failed to read input");
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read input");
         let trimmed = input.trim().to_lowercase();
 
         match trimmed.as_str() {
-            "y" | "yes" => { answer = true; break; }
-            "n" | "no"  => { answer = false; break; }
-            _           => println!("Invalid input"),
+            "y" | "yes" => {
+                answer = true;
+                break;
+            }
+            "n" | "no" => {
+                answer = false;
+                break;
+            }
+            _ => println!("Invalid input"),
         }
     }
     answer
 }
 
+pub fn velocity_to_color(velocity: DVec2, minimum_speed_log: f32, maximum_speed_log: f32) -> Color {
+    let velocity_log: f32 = velocity.length().log10() as f32;
 
-pub fn velocity_to_color(velocity: DVec2) -> Color {
-    let hue: f32 = 0.0f32.max(0.72f32.min(0.6*(velocity.length() / EARTH_ORBITAL_VELOCITY).powf(2.) as f32));
+    let normalized = ((velocity_log - minimum_speed_log) / (maximum_speed_log - minimum_speed_log))
+        .clamp(0.0, 1.0);
+
+    let hue = (1.0 - normalized) * MAX_VIOLET_HUE;
+
     color::hsl_to_rgb(hue, 1., 0.5)
 }
 
-pub fn draw_trails(num_important_bodies: usize, system: &[Particle; 1200], trail_point_counter: &mut usize, trail_values: &mut Vec<Vec<Vec<DVec2>>>) {
+pub fn draw_trails(
+    num_important_bodies: usize,
+    system: &[Particle; 1200],
+    trail_point_counter: &mut usize,
+    trail_values: &mut Vec<Vec<Vec<DVec2>>>,
+    log_min_speed: f32,
+    log_max_speed: f32,
+) {
     for i in 0..num_important_bodies {
         trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT][0] = system[i].position;
         trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT][1] = system[i].velocity;
@@ -237,7 +269,11 @@ pub fn draw_trails(num_important_bodies: usize, system: &[Particle; 1200], trail
     *trail_point_counter += 1;
 
     let recent_point = *trail_point_counter % OLD_FRAME_LIMIT;
-    let gap_point = if recent_point == 0 { OLD_FRAME_LIMIT - 1 } else { recent_point - 1 };
+    let gap_point = if recent_point == 0 {
+        OLD_FRAME_LIMIT - 1
+    } else {
+        recent_point - 1
+    };
     // Draws the trail using old_positions
 
     for i in 0..num_important_bodies {
@@ -246,12 +282,14 @@ pub fn draw_trails(num_important_bodies: usize, system: &[Particle; 1200], trail
                 let pos_1 = trail_values[i][j][0];
                 let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
                 if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
-                    draw_line(scale_window(pos_1[0]),
-                              scale_window(pos_1[1]),
-                              scale_window(pos_2[0]),
-                              scale_window(pos_2[1]),
-                              TRAIL_RADIUS,
-                              velocity_to_color(trail_values[i][j][1]));
+                    draw_line(
+                        scale_window(pos_1[0]),
+                        scale_window(pos_1[1]),
+                        scale_window(pos_2[0]),
+                        scale_window(pos_2[1]),
+                        TRAIL_RADIUS,
+                        velocity_to_color(trail_values[i][j][1], log_min_speed, log_max_speed),
+                    );
                 }
             }
         }
