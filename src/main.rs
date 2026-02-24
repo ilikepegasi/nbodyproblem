@@ -6,6 +6,8 @@ mod constants;
 use constants::*;
 
 mod helpers;
+mod init_helpers;
+
 use helpers::*;
 
 // TODO: Refactor the generation of the bodies into their own function in helpers.rs
@@ -52,36 +54,7 @@ async fn main() {
     num_important_bodies += 1;
     let gamma: f64 = 2.0 * std::f64::consts::PI;
 
-    for i in 0..EARTH_NUMBER {
-        let angular_position: f64 = gamma * i as f64 / EARTH_NUMBER as f64;
-        let earth_x_position: f64 =
-            CENTER_COORDS[0] + angular_position.cos() * EARTH_ORBITAL_RADIUS;
-        let earth_y_position: f64 =
-            CENTER_COORDS[1] + angular_position.sin() * EARTH_ORBITAL_RADIUS;
-        let earth_position: DVec2 = DVec2::new(earth_x_position, earth_y_position);
-
-        let velocity_direction: f64 = angular_position + 0.5 * std::f64::consts::PI;
-        let orbital_speed = 0.3 * EARTH_ORBITAL_VELOCITY;
-        let earth_x_velocity: f64 = velocity_direction.cos() * orbital_speed;
-        let earth_y_velocity: f64 = velocity_direction.sin() * orbital_speed;
-
-        let earth_velocity: DVec2 = DVec2::new(earth_x_velocity, earth_y_velocity);
-
-        let mut new_planet: Particle = Particle {
-            mass: EARTH_MASS,
-            position: earth_position,
-            velocity: earth_velocity,
-            radius: EARTH_RADIUS,
-            color: BLUE,
-            name: String::from(format!("Planet {}", i + 1)),
-            kinetic_energy: 0.,
-        };
-        new_planet.update_kinetic_energy();
-        system[i + 1] = new_planet;
-        if system[i + 1].mass >= 0.2 * EARTH_MASS {
-            num_important_bodies += 1;
-        };
-    }
+    initialize_bodies_spiro(&mut num_important_bodies, &mut system);
 
     let gamma: f64 = 2.0 * std::f64::consts::PI;
 
@@ -131,12 +104,12 @@ async fn main() {
         &system[0],
         DVec2::new(0., MIN_RADIUS_COLOR),
     )
-    .log10() as f32 + 0.5;
+        .log10() as f32 + 0.5;
     let maximum_speed_color = calculate_orbital_speed(
         &system[0],
         DVec2::new(0., MAX_RADIUS_COLOR),
     )
-    .log10() as f32 - 0.5;
+        .log10() as f32 - 0.5;
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
     let mut trail_values = vec![
