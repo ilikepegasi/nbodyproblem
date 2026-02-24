@@ -1,4 +1,4 @@
-use macroquad::color::BLUE;
+use macroquad::color::{Color, BLUE};
 use macroquad::math::DVec2;
 use macroquad::rand::gen_range;
 use crate::constants::*;
@@ -10,14 +10,15 @@ pub enum Variance {
 }
 
 
-pub fn initialize_bodies_spiro(num_bodies_added: usize,
-                               orbital_radius: f64,
-                               mass: f64,
+pub fn initialize_bodies_spiro(num_bodies_added: &usize,
+                               orbital_radius: &f64,
+                               mass: &f64,
+                               color: &Color,
                                system: &mut [Particle; NUMBER_OF_BODIES],
                                radius_variance: Variance,
                                mass_variance: Variance,
 ) -> usize /* This will return the amount of significant bodies added */ {
-
+    let mut num_important_bodies_added= 0;
     if let Variance::With_Variance(min_variance, max_variance) = radius_variance {
         let orbital_radius = orbital_radius * gen_range(min_variance, max_variance);
     }
@@ -25,8 +26,8 @@ pub fn initialize_bodies_spiro(num_bodies_added: usize,
         let mass = mass * gen_range(min_variance, max_variance);
     }
 
-    for i in 0..EARTH_NUMBER {
-        let angular_position: f64 = TAU * i as f64 / num_bodies_added as f64;
+    for i in 0..*num_bodies_added {
+        let angular_position: f64 = TAU * i as f64 / *num_bodies_added as f64;
         let earth_x_position: f64 =
             CENTER_COORDS[0] + angular_position.cos() * EARTH_ORBITAL_RADIUS;
         let earth_y_position: f64 =
@@ -40,8 +41,8 @@ pub fn initialize_bodies_spiro(num_bodies_added: usize,
 
         let earth_velocity: DVec2 = DVec2::new(earth_x_velocity, earth_y_velocity);
 
-        let mut new_planet: Particle = Particle {
-            mass: EARTH_MASS,
+        let mut new_body: Particle = Particle {
+            mass: *mass,
             position: earth_position,
             velocity: earth_velocity,
             radius: EARTH_RADIUS,
@@ -49,10 +50,11 @@ pub fn initialize_bodies_spiro(num_bodies_added: usize,
             name: String::from(format!("Planet {}", i + 1)),
             kinetic_energy: 0.,
         };
-        new_planet.update_kinetic_energy();
-        system[i + 1] = new_planet;
-        if system[i + 1].mass >= 0.2 * EARTH_MASS {
-            num_important_bodies += 1;
+        new_body.update_kinetic_energy();
+        system[i + 1] = new_body;
+        if system[i + 1].mass >= IMPORTANT_BODY_MASS_MIN {
+            num_important_bodies_added += 1;
         };
     }
+    num_important_bodies_added
 }

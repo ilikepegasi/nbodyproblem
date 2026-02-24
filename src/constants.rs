@@ -67,6 +67,8 @@ pub const MAX_RADIUS_COLOR: f64 = 1.5 * EARTH_ORBITAL_RADIUS;
 pub const MAX_VIOLET_HUE: f32 = 0.72;
 pub const MIN_RED_HUE: f32 = 0.0;
 
+pub const IMPORTANT_BODY_MASS_MIN: f64 = 0.2 * EARTH_MASS;
+
 
 
 // Graphical Sizes
