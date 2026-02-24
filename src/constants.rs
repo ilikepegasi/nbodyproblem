@@ -32,11 +32,18 @@ pub const VIEWER_SECONDS_PER_FRAME: f64 = 1./ FRAMES_PER_VIEWER_SECOND as f64;
 pub const FRAMES_PER_VIEWER_SECOND: usize = 80;
 pub const SIM_SECONDS_PER_FRAME: f64 = 2e4;
 pub const DT: f64 = SIM_SECONDS_PER_FRAME / TICKS_PER_FRAME as f64;
+
+pub const COLLISION_MIN_MASS: f64 = 1.0;
+
+
+
+// Simulation Initialization Parameters
 pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
 pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
-pub const MIN_MASS: f64 = 1.0;
+pub const DEFAULT_ANGULAR_OFFSET: f64 = 0.;
+
 
 pub const TICKS_PER_FRAME: usize = 12;
 pub const EARTH_NUMBER: usize = 180;

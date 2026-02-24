@@ -40,8 +40,8 @@ impl Particle {
         for body_number in 0..NUMBER_OF_BODIES {
             // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
             if body_number != self_index
-                && system[body_number].mass > MIN_MASS
-                && self.mass > MIN_MASS
+                && system[body_number].mass > COLLISION_MIN_MASS
+                && self.mass > COLLISION_MIN_MASS
             {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
@@ -62,7 +62,7 @@ impl Particle {
         let mut energy: f64 = 0.;
 
         for body_number in (self_index + 1)..NUMBER_OF_BODIES {
-            if system[body_number].mass > MIN_MASS && self.mass > MIN_MASS {
+            if system[body_number].mass > COLLISION_MIN_MASS && self.mass > COLLISION_MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 energy += -G * self.mass * system[body_number].mass / (distance);
             }
@@ -85,9 +85,9 @@ impl Particle {
     }
 }
 
-pub fn calculate_orbital_speed(center_object: &Particle, position: DVec2) -> f64 {
-    let distance = (center_object.position - position).length();
-    let speed = ((G * center_object.mass) / distance).sqrt();
+pub fn calculate_orbital_speed(center_object_mass: &f64, center_object_position: &DVec2, position: DVec2) -> f64 {
+    let distance = (*center_object_position - position).length();
+    let speed = ((*center_object_mass * G) / distance).sqrt();
     speed
 }
 
@@ -112,8 +112,8 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
         for j in i + 1..NUMBER_OF_BODIES {
             if (system[i].position - system[j].position).length()
                 < system[i].radius + system[j].radius
-                && system[j].mass > MIN_MASS
-                && system[j].mass > MIN_MASS
+                && system[j].mass > COLLISION_MIN_MASS
+                && system[j].mass > COLLISION_MIN_MASS
             {
                 let total_mass = system[i].mass + system[j].mass;
                 let new_position = (system[i].position * system[i].mass

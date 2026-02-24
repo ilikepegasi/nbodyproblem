@@ -2,12 +2,14 @@ use macroquad::prelude::*;
 use macroquad::rand::gen_range;
 use rayon::prelude::*;
 use std::fs::File;
+use std::f64::consts::TAU;
+
 mod constants;
 use constants::*;
 
 mod helpers;
 mod init_helpers;
-
+use init_helpers::*;
 use helpers::*;
 
 // TODO: Refactor the generation of the bodies into their own function in helpers.rs
@@ -29,7 +31,10 @@ async fn main() {
     let file_write = take_user_choice("Do you want to write to a file? ");
     let trails = take_user_choice("Do you want to have trails? ");
     let collisions = take_user_choice("Do you want to have collisions? ");
+    let mut total_bodies_added = 0;
+
     let mut num_important_bodies = 0;
+
     // Creating the array of particles representing the system with blank values at first
     let mut system: [Particle; NUMBER_OF_BODIES] = std::array::from_fn(|_| Particle {
         mass: 0.0,
@@ -52,11 +57,9 @@ async fn main() {
     star.update_kinetic_energy();
     system[0] = star;
     num_important_bodies += 1;
-    let gamma: f64 = 2.0 * std::f64::consts::PI;
 
-    initialize_bodies_spiro(&mut num_important_bodies, &mut system);
+    initialize_bodies_spiro();
 
-    let gamma: f64 = 2.0 * std::f64::consts::PI;
 
     // Generates a number of comets with varying masses, positions, and velocities
     for i in EARTH_NUMBER + 1..NUMBER_OF_BODIES {
@@ -101,15 +104,15 @@ async fn main() {
     let mut seconds_passed_in_sim: f64 = 0.0;
 
     let minimum_speed_color = calculate_orbital_speed(
-        &system[0],
+        &system[0].mass,
+        &system[0].position,
         DVec2::new(0., MIN_RADIUS_COLOR),
-    )
-        .log10() as f32 + 0.5;
+    ).log10() as f32 + 0.5;
     let maximum_speed_color = calculate_orbital_speed(
-        &system[0],
+        &system[0].mass,
+        &system[0].position,
         DVec2::new(0., MAX_RADIUS_COLOR),
-    )
-        .log10() as f32 - 0.5;
+    ).log10() as f32 - 0.5;
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
     let mut trail_values = vec![
