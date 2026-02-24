@@ -40,8 +40,8 @@ impl Particle {
         for body_number in 0..NUMBER_OF_BODIES {
             // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
             if body_number != self_index
-                && system[body_number].mass > MIN_MASS
-                && self.mass > MIN_MASS
+                && system[body_number].mass > COLLISION_MIN_MASS
+                && self.mass > COLLISION_MIN_MASS
             {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 let direction: DVec2 = (system[body_number].position - self.position) / (distance);
@@ -62,7 +62,7 @@ impl Particle {
         let mut energy: f64 = 0.;
 
         for body_number in (self_index + 1)..NUMBER_OF_BODIES {
-            if system[body_number].mass > MIN_MASS && self.mass > MIN_MASS {
+            if system[body_number].mass > COLLISION_MIN_MASS && self.mass > COLLISION_MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 energy += -G * self.mass * system[body_number].mass / (distance);
             }
@@ -85,9 +85,9 @@ impl Particle {
     }
 }
 
-pub fn calculate_orbital_speed(center_object: &Particle, position: DVec2) -> f64 {
-    let distance = (center_object.position - position).length();
-    let speed = ((G * center_object.mass) / distance).sqrt();
+pub fn calculate_orbital_speed(center_object_mass: &f64, center_object_position: &DVec2, position: DVec2) -> f64 {
+    let distance = (*center_object_position - position).length();
+    let speed = ((*center_object_mass * G) / distance).sqrt();
     speed
 }
 
@@ -107,13 +107,13 @@ pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 
 }
 
 pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
-    let number_of_collisions: u32 = 0;
+    let mut number_of_collisions: u32 = 0;
     for i in 0..NUMBER_OF_BODIES {
         for j in i + 1..NUMBER_OF_BODIES {
             if (system[i].position - system[j].position).length()
                 < system[i].radius + system[j].radius
-                && system[j].mass > MIN_MASS
-                && system[j].mass > MIN_MASS
+                && system[i].mass > COLLISION_MIN_MASS
+                && system[j].mass > COLLISION_MIN_MASS
             {
                 let total_mass = system[i].mass + system[j].mass;
                 let new_position = (system[i].position * system[i].mass
@@ -133,7 +133,7 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
                     + system[dead_object].radius.powi(3))
                 .cbrt();
                 if system[dead_object].mass > (0.1 * system[collider_object].mass) {
-                    system[collider_object].color = RED
+                    system[collider_object].color = PINK;
                 };
 
                 system[collider_object].mass = total_mass;
@@ -141,6 +141,7 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
                 system[dead_object].mass = 0.0;
                 system[dead_object].radius = 0.0;
                 system[dead_object].position = COLLIDED_POSITION;
+                number_of_collisions += 1;
             }
         }
     }
@@ -249,14 +250,14 @@ pub fn velocity_to_color(velocity: DVec2, minimum_speed_log: f32, maximum_speed_
     let normalized = ((velocity_log - minimum_speed_log) / (maximum_speed_log - minimum_speed_log))
         .clamp(0.0, 1.0);
 
-    let hue = (1.0 - normalized) * MAX_VIOLET_HUE;
+    let hue = (normalized) * MAX_VIOLET_HUE;
 
-    color::hsl_to_rgb(hue, 1., 0.5)
+    color::hsl_to_rgb(hue, 0.4, 0.7)
 }
 
 pub fn draw_trails(
     num_important_bodies: usize,
-    system: &[Particle; 1200],
+    system: &[Particle; NUMBER_OF_BODIES],
     trail_point_counter: &mut usize,
     trail_values: &mut Vec<Vec<Vec<DVec2>>>,
     log_min_speed: f32,
