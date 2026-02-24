@@ -30,7 +30,7 @@ pub const SECONDS_IN_YEAR: f64 = 31556926.; // seconds/year
 pub const NUMBER_OF_BODIES: usize = 1200usize;
 pub const VIEWER_SECONDS_PER_FRAME: f64 = 1./ FRAMES_PER_VIEWER_SECOND as f64;
 pub const FRAMES_PER_VIEWER_SECOND: usize = 80;
-pub const SIM_SECONDS_PER_FRAME: f64 = 5e3;
+pub const SIM_SECONDS_PER_FRAME: f64 = 2e4;
 pub const DT: f64 = SIM_SECONDS_PER_FRAME / TICKS_PER_FRAME as f64;
 pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
@@ -38,7 +38,7 @@ pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
 pub const MIN_MASS: f64 = 1.0;
 
-pub const TICKS_PER_FRAME: usize = 3;
+pub const TICKS_PER_FRAME: usize = 12;
 pub const EARTH_NUMBER: usize = 180;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EARTH_ORBITAL_RADIUS * 1e8);
@@ -48,9 +48,11 @@ pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EART
 // Data Parameters
 pub const ROW_LIMIT: usize = 18000;
 pub const ENERGY_INTERVAL: usize = 1;
-pub const DATA_INTERVAL: usize = 4 * TICKS_PER_FRAME;
+pub const YEARS_OF_WRITING: f32 = 3.0;
+
+pub const SIM_SECONDS_PER_DATA_ROW: f64 = YEARS_OF_WRITING as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
+pub const DATA_INTERVAL: usize = (SIM_SECONDS_PER_DATA_ROW / DT) as usize;
 pub const LEFT_PAD: usize = 4;
-pub const EXPECTED_YEARS: f64 = DT * (TICKS_PER_FRAME as f64) * (ROW_LIMIT as f64) / SECONDS_IN_YEAR;
 pub const COLUMNS_PER_OBJECT: usize = 2;
 
 // Graphics Parameters

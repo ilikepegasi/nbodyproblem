@@ -197,17 +197,17 @@ async fn main() {
             if collisions {
                 collision_counter += collision_engine(&mut system)
             };
-
-            seconds_passed_in_sim += DT;
-        }
-        if file_write {
-            if let Some(ref mut w) = wtr {
-                if rows_added < ROW_LIMIT && total_physics_ticks % DATA_INTERVAL == 0 {
-                    add_physical_data(&system, seconds_passed_in_sim, w, rows_added);
-                    rows_added += 1;
+            if file_write {
+                if let Some(ref mut w) = wtr {
+                    if rows_added < ROW_LIMIT && total_physics_ticks % DATA_INTERVAL == 0 {
+                        add_physical_data(&system, seconds_passed_in_sim, w, rows_added);
+                        rows_added += 1;
+                    }
                 }
             }
+            seconds_passed_in_sim += DT;
         }
+
 
         if trails {
             draw_trails(
@@ -236,9 +236,9 @@ async fn main() {
 
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
         let mut info_on_screen = format!(
-            "Years Passed: {}/{} | Total Physics Ticks: {}",
-            &years_passed_in_sim[0..5],
-            &EXPECTED_YEARS.to_string()[0..5],
+            "Years Passed: {:.5}/{:.2} | Total Physics Ticks: {}",
+            &years_passed_in_sim,
+            &YEARS_OF_WRITING,
             total_physics_ticks
         );
         draw_text(
