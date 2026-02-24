@@ -11,8 +11,7 @@ mod helpers;
 mod init_helpers;
 use init_helpers::*;
 use helpers::*;
-
-// TODO: Refactor the generation of the bodies into their own function in helpers.rs
+use crate::init_helpers::CenterObjectValues::CenterObjectExists;
 
 // TODO: Implement volume as a trait of Particle
 // TODO: Implement scenarios: this would be spirograph/s, and I want to implement figure 8/f
@@ -34,6 +33,7 @@ async fn main() {
     let mut total_bodies_added = 0;
 
     let mut num_important_bodies = 0;
+
 
     // Creating the array of particles representing the system with blank values at first
     let mut system: [Particle; NUMBER_OF_BODIES] = std::array::from_fn(|_| Particle {
@@ -57,44 +57,16 @@ async fn main() {
     star.update_kinetic_energy();
     system[0] = star;
     num_important_bodies += 1;
+    total_bodies_added += 1;
+    let center_object_values = CenterObjectExists(system[0].mass, system[0].position);
 
-    initialize_bodies_spiro();
+    let bodies_values_delta = initialize_bodies_spiro(&EARTH_NUMBER, &total_bodies_added, &(EARTH_ORBITAL_RADIUS), &EARTH_MASS, &WHITE, &EARTH_RADIUS, &0.5, &mut system, &0.0, Variance::NoVariance, Variance::NoVariance, center_object_values, "Planet");
+    total_bodies_added += bodies_values_delta.0;
+    num_important_bodies += bodies_values_delta.1;
 
-
+    assert_eq!(total_bodies_added, NUMBER_OF_BODIES);
     // Generates a number of comets with varying masses, positions, and velocities
-    for i in EARTH_NUMBER + 1..NUMBER_OF_BODIES {
-        let comet_orbital_radius: f64 = gen_range(
-            COMET_ORBITAL_RADIUS_VARIANCE_MIN,
-            COMET_ORBITAL_RADIUS_VARIANCE_MAX,
-        ) * COMET_ORBITAL_RADIUS;
-        let angular_position: f64 = gamma * gen_range(0.0, 1.0);
-        let comet_x_position: f64 =
-            CENTER_COORDS[0] + angular_position.cos() * comet_orbital_radius;
-        let comet_y_position: f64 =
-            CENTER_COORDS[1] + angular_position.sin() * comet_orbital_radius;
-        let comet_position: DVec2 = DVec2::new(comet_x_position, comet_y_position);
 
-        let velocity_direction: f64 = angular_position + 0.5 * std::f64::consts::PI;
-        let orbital_speed = calculate_orbital_speed(&system[0], comet_position);
-        let comet_x_velocity: f64 = velocity_direction.cos() * orbital_speed;
-        let comet_y_velocity: f64 = velocity_direction.sin() * orbital_speed;
-
-        let comet_velocity: DVec2 = DVec2::new(comet_x_velocity, comet_y_velocity);
-
-        let comet_mass: f64 =
-            gen_range(COMET_MASS_VARIANCE_MIN, COMET_MASS_VARIANCE_MAX) * COMET_MASS;
-        let mut new_comet: Particle = Particle {
-            mass: comet_mass,
-            position: comet_position,
-            velocity: comet_velocity,
-            radius: COMET_RADIUS,
-            color: LIGHTGRAY,
-            name: String::from(format!("Comet {}", i)),
-            kinetic_energy: 0.,
-        };
-        new_comet.update_kinetic_energy();
-        system[i] = new_comet;
-    }
 
     let mut collision_counter: u32 = 0;
 
@@ -106,13 +78,13 @@ async fn main() {
     let minimum_speed_color = calculate_orbital_speed(
         &system[0].mass,
         &system[0].position,
-        DVec2::new(0., MIN_RADIUS_COLOR),
-    ).log10() as f32 + 0.5;
+        DVec2::new(system[0].position.x, system[0].position.y + MAX_RADIUS_MIN_COLOR),
+    ).log10() as f32;
     let maximum_speed_color = calculate_orbital_speed(
         &system[0].mass,
         &system[0].position,
-        DVec2::new(0., MAX_RADIUS_COLOR),
-    ).log10() as f32 - 0.5;
+        DVec2::new(system[0].position.x, system[0].position.y + MIN_RADIUS_MAX_COLOR),
+    ).log10() as f32;
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
     let mut trail_values = vec![
