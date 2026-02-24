@@ -1,8 +1,6 @@
 use macroquad::prelude::*;
-use macroquad::rand::gen_range;
 use rayon::prelude::*;
 use std::fs::File;
-use std::f64::consts::TAU;
 
 mod constants;
 use constants::*;
