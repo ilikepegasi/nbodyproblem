@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use crate::constants::*;
 use csv::Writer;
 use macroquad::prelude::*;
@@ -32,7 +33,7 @@ impl Particle {
     // all the system's bodies
     pub fn calculate_g_force(
         &self,
-        system: &[Particle; NUMBER_OF_BODIES],
+        system: &Vec<Particle>,
         self_index: usize,
     ) -> DVec2 {
         let mut force_vector = DVec2::new(0., 0.);
@@ -56,7 +57,7 @@ impl Particle {
     }
     pub fn find_potential_gravitational_energy(
         &self,
-        system: &[Particle; NUMBER_OF_BODIES],
+        system: &Vec<Particle>,
         self_index: usize,
     ) -> f64 {
         let mut energy: f64 = 0.;
@@ -96,7 +97,7 @@ pub fn scale_window(distance: f64) -> f32 {
     (distance * WINDOW_FACTOR) as f32
 }
 
-pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 {
+pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
     let mut total_energy: f64 = 0.;
     for i in 0..NUMBER_OF_BODIES {
         if system[i].mass != 0.0 {
@@ -106,7 +107,7 @@ pub fn find_system_kinetic_energy(system: &[Particle; NUMBER_OF_BODIES]) -> f64 
     total_energy
 }
 
-pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
+pub fn collision_engine(system: &mut Vec<Particle>) -> u32 {
     let mut number_of_collisions: u32 = 0;
     for i in 0..NUMBER_OF_BODIES {
         for j in i + 1..NUMBER_OF_BODIES {
@@ -149,7 +150,7 @@ pub fn collision_engine(system: &mut [Particle; NUMBER_OF_BODIES]) -> u32 {
 }
 
 pub fn add_physical_data(
-    system: &[Particle; NUMBER_OF_BODIES],
+    system: &Vec<Particle>,
     time: f64,
     wtr: &mut Writer<File>,
     rows: usize,
@@ -165,7 +166,7 @@ pub fn add_physical_data(
     }
 
     if rows % ENERGY_INTERVAL == 0 {
-        let total_kinetic_energy = find_system_kinetic_energy(system);
+        let total_kinetic_energy = find_system_kinetic_energy(&system);
         let gravitational_energies: Vec<f64> = (0..NUMBER_OF_BODIES)
             .into_par_iter()
             .map(|i| system[i].find_potential_gravitational_energy(&system, i))
@@ -185,7 +186,7 @@ pub fn add_physical_data(
     wtr.flush().unwrap();
 }
 
-pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<File>) {
+pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) {
     let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] =
         std::array::from_fn(|_| String::from(""));
     newline[0] = String::from("Time");
@@ -207,7 +208,7 @@ pub fn add_topline_data(system: &[Particle; NUMBER_OF_BODIES], wtr: &mut Writer<
     wtr.flush().unwrap();
 }
 
-pub fn draw_bodies(system: &[Particle; NUMBER_OF_BODIES]) {
+pub fn draw_bodies(system: &Vec<Particle>) {
     for i in 0..NUMBER_OF_BODIES {
         draw_circle(
             scale_window(system[i].position[0]),
@@ -257,7 +258,7 @@ pub fn velocity_to_color(velocity: DVec2, minimum_speed_log: f32, maximum_speed_
 
 pub fn draw_trails(
     num_important_bodies: usize,
-    system: &[Particle; NUMBER_OF_BODIES],
+    system: &Vec<Particle>,
     trail_point_counter: &mut usize,
     trail_values: &mut Vec<Vec<Vec<DVec2>>>,
     log_min_speed: f32,

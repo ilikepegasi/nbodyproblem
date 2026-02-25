@@ -22,7 +22,7 @@ pub fn initialize_bodies_spiro(bodies_to_add: &usize,
                                color: &Color,
                                radius: &f64,
                                orbital_speed_factor: &f64,
-                               system: &mut [Particle; NUMBER_OF_BODIES],
+                               system: &mut Vec<Particle>,
                                initial_angular_offset: &f64,
                                orbital_radius_variance: Variance,
                                mass_variance: Variance,
@@ -72,7 +72,7 @@ pub fn initialize_bodies_spiro(bodies_to_add: &usize,
             kinetic_energy: 0.,
         };
         new_body.update_kinetic_energy();
-        system[i + *num_bodies_added] = new_body;
+        system.push(new_body);
         if system[i + *num_bodies_added].mass >= IMPORTANT_BODY_MASS_MIN {
             num_important_bodies_added += 1;
         };
