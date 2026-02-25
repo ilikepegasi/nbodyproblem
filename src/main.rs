@@ -1,3 +1,4 @@
+use std::f64::consts::TAU;
 use macroquad::prelude::*;
 use rayon::prelude::*;
 use std::fs::File;
@@ -34,15 +35,7 @@ async fn main() {
 
 
     // Creating the array of particles representing the system with blank values at first
-    let mut system: [Particle; NUMBER_OF_BODIES] = std::array::from_fn(|_| Particle {
-        mass: 0.0,
-        position: DVec2::new(0., 0.),
-        velocity: DVec2::new(0., 0.),
-        radius: 0.,
-        color: WHITE,
-        name: String::from("Default"),
-        kinetic_energy: 0.,
-    });
+    let mut system: Vec<&mut Particle> = Vec::new();
     let mut star: Particle = Particle {
         mass: STAR_MASS,
         position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]),
@@ -53,14 +46,22 @@ async fn main() {
         kinetic_energy: 0.,
     };
     star.update_kinetic_energy();
-    system[0] = star;
+    system.push(&mut star);
     num_important_bodies += 1;
     total_bodies_added += 1;
     let center_object_values = CenterObjectExists(system[0].mass, system[0].position);
 
-    let bodies_values_delta = initialize_bodies_spiro(&EARTH_NUMBER, &total_bodies_added, &(EARTH_ORBITAL_RADIUS), &EARTH_MASS, &WHITE, &EARTH_RADIUS, &0.5, &mut system, &0.0, Variance::NoVariance, Variance::NoVariance, center_object_values, "Planet");
+    let bodies_values_delta = initialize_bodies_spiro(&(EARTH_NUMBER/3), &total_bodies_added, &(EARTH_ORBITAL_RADIUS), &EARTH_MASS, &WHITE, &EARTH_RADIUS, &0.5, &mut system, &0.0, Variance::NoVariance, Variance::NoVariance, &center_object_values, "Planet");
+
+
     total_bodies_added += bodies_values_delta.0;
     num_important_bodies += bodies_values_delta.1;
+    let bodies_values_delta = initialize_bodies_spiro(&(EARTH_NUMBER/3), &total_bodies_added, &(EARTH_ORBITAL_RADIUS), &EARTH_MASS, &WHITE, &EARTH_RADIUS, &1.0, &mut system, &(TAU/7.), Variance::NoVariance, Variance::NoVariance, &center_object_values, "Planet");
+    num_important_bodies += bodies_values_delta.1;
+    total_bodies_added += bodies_values_delta.0;
+    let bodies_values_delta = initialize_bodies_spiro(&(EARTH_NUMBER/3), &total_bodies_added, &(EARTH_ORBITAL_RADIUS/7.0), &EARTH_MASS, &WHITE, &EARTH_RADIUS, &1.0, &mut system, &(TAU/7.), Variance::NoVariance, Variance::NoVariance, &center_object_values, "Planet");
+    num_important_bodies += bodies_values_delta.1;
+    total_bodies_added += bodies_values_delta.0;
 
     assert_eq!(total_bodies_added, NUMBER_OF_BODIES);
     // Generates a number of comets with varying masses, positions, and velocities
@@ -90,7 +91,7 @@ async fn main() {
     ];
 
     let my_file = if file_write {
-        Some(File::create("orbital_simulation.csv").unwrap())
+        Some(File::create(format!("orbital_simulation_{}.csv", TICKS_PER_FRAME)).unwrap())
     } else {
         None
     };
@@ -105,11 +106,11 @@ async fn main() {
         rows_added += 1;
     }
     draw_bodies(&system);
-    let mut frames_waited = 0;
-    while frames_waited < 0 * (1. / VIEWER_SECONDS_PER_FRAME) as i32 {
+    let mut time_to_wait = get_number_from_user("How long to wait?");
+    while time_to_wait > 0.0 {
         draw_bodies(&system);
         next_frame().await;
-        frames_waited += 1;
+        time_to_wait -= get_frame_time().min(0.1);
     }
 
     loop {
@@ -215,3 +216,4 @@ async fn main() {
         next_frame().await
     }
 }
+

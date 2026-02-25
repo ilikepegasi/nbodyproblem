@@ -26,7 +26,7 @@ pub fn initialize_bodies_spiro(bodies_to_add: &usize,
                                initial_angular_offset: &f64,
                                orbital_radius_variance: Variance,
                                mass_variance: Variance,
-                               center_object_values: CenterObjectValues,
+                               center_object_values: &CenterObjectValues,
                                category_name: &str,
 ) -> (usize, usize) /* This will return the amount of significant bodies added */ {
     let mut orbital_speed: f64;

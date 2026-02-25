@@ -53,9 +53,9 @@ pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EART
 
 
 // Data Parameters
-pub const ROW_LIMIT: usize = 24000;
+pub const ROW_LIMIT: usize = 16000;
 pub const ENERGY_INTERVAL: usize = 1;
-pub const YEARS_OF_WRITING: f32 = 5.0;
+pub const YEARS_OF_WRITING: f32 = 8.0;
 
 pub const SIM_SECONDS_PER_DATA_ROW: f64 = YEARS_OF_WRITING as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
 pub const DATA_INTERVAL: usize = (SIM_SECONDS_PER_DATA_ROW / DT) as usize;

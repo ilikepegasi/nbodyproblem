@@ -296,3 +296,17 @@ pub fn draw_trails(
         }
     }
 }
+
+
+
+pub fn get_number_from_user(text: &str) -> f32 {
+    loop {
+        let mut user_input: String = String::new();
+        println!("{}", text);
+        io::stdin().read_line(&mut user_input).expect("Failed to read line");
+        match user_input.trim().parse::<f32>() {
+            Ok(number) => return number,
+            Err(_) => println!("Invalid input. Please enter a valid number."),
+        }
+    }
+}
