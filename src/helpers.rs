@@ -259,13 +259,13 @@ pub fn draw_trails(
     num_important_bodies: usize,
     system: &[Particle; NUMBER_OF_BODIES],
     trail_point_counter: &mut usize,
-    trail_values: &mut Vec<Vec<Vec<DVec2>>>,
+    trail_values: &mut Vec<Vec<(DVec2, Color)>>,
     log_min_speed: f32,
     log_max_speed: f32,
 ) {
     for i in 0..num_important_bodies {
-        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT][0] = system[i].position;
-        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT][1] = system[i].velocity;
+        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT].0 = system[i].position;
+        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT].1 = velocity_to_color(system[i].velocity, log_min_speed, log_max_speed);
     }
     *trail_point_counter += 1;
 
@@ -280,8 +280,8 @@ pub fn draw_trails(
     for i in 0..num_important_bodies {
         for j in 0..OLD_FRAME_LIMIT.min(*trail_point_counter) {
             if j != gap_point {
-                let pos_1 = trail_values[i][j][0];
-                let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT][0];
+                let pos_1 = trail_values[i][j].0;
+                let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT].0;
                 if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
                     draw_line(
                         scale_window(pos_1[0]),
@@ -289,7 +289,7 @@ pub fn draw_trails(
                         scale_window(pos_2[0]),
                         scale_window(pos_2[1]),
                         TRAIL_RADIUS,
-                        velocity_to_color(trail_values[i][j][1], log_min_speed, log_max_speed),
+                        trail_values[i][j].1,
                     );
                 }
             }

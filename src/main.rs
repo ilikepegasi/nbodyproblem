@@ -84,10 +84,9 @@ async fn main() {
     ).log10() as f32;
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
-    let mut trail_values = vec![
-        vec![vec![DVec2::new(0., 0.), DVec2::new(0., 0.)]; OLD_FRAME_LIMIT];
-        num_important_bodies
-    ];
+    let mut trail_values: Vec<Vec<(DVec2, Color)>> = vec![
+        vec![(DVec2::new(0., 0.), WHITE); OLD_FRAME_LIMIT];
+        num_important_bodies];
 
     let my_file = if file_write {
         Some(File::create("orbital_simulation.csv").unwrap())
