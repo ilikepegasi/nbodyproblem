@@ -31,7 +31,7 @@ pub const NUMBER_OF_BODIES: usize = 1+EARTH_NUMBER;
 pub const VIEWER_SECONDS_PER_FRAME: f64 = 1./ FRAMES_PER_VIEWER_SECOND as f64;
 pub const FRAMES_PER_VIEWER_SECOND: usize = 80;
 pub const SIM_SECONDS_PER_FRAME: f64 = 2e4;
-pub const DT: f64 = SIM_SECONDS_PER_FRAME / TICKS_PER_FRAME as f64;
+pub const DT: f64 = SIM_SECONDS_PER_FRAME / (TICKS_PER_FRAME as f64+1e-25);
 
 pub const COLLISION_MIN_MASS: f64 = 1.0;
 
@@ -45,7 +45,7 @@ pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
 pub const DEFAULT_ANGULAR_OFFSET: f64 = 0.;
 
 
-pub const TICKS_PER_FRAME: usize = 24;
+pub const TICKS_PER_FRAME: usize = 30;
 pub const EARTH_NUMBER: usize = 360;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 = DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EARTH_ORBITAL_RADIUS * 1e8);
