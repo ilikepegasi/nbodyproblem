@@ -1,9 +1,9 @@
-use std::fmt::Display;
 use crate::constants::*;
 use csv::Writer;
 use macroquad::prelude::*;
 use macroquad::{color, color::Color, math::DVec2};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use std::fmt::Display;
 use std::fs::File;
 use std::io;
 
@@ -21,24 +21,20 @@ pub struct Particle {
 impl Particle {
     // Method changing the values of a particle based on a given force vector
 
-    pub fn drift(&mut self) {
-        self.position += self.velocity * DT;
+    pub fn drift(&mut self, dt: f64) {
+        self.position += self.velocity * dt;
     }
-    pub fn kick(&mut self, force: DVec2) {
+    pub fn kick(&mut self, force: DVec2, dt: f64) {
         let acceleration = force / self.mass;
-        self.velocity += 0.5 * acceleration * DT;
+        self.velocity += 0.5 * acceleration * dt;
     }
 
     // Method calculating total force acting upon a body from the input of the array of
     // all the system's bodies
-    pub fn calculate_g_force(
-        &self,
-        system: &Vec<Particle>,
-        self_index: usize,
-    ) -> DVec2 {
+    pub fn calculate_g_force(&self, system: &Vec<Particle>, self_index: usize) -> DVec2 {
         let mut force_vector = DVec2::new(0., 0.);
 
-        for body_number in 0..NUMBER_OF_BODIES {
+        for body_number in 0..system.len() {
             // I'm using "self_index" to make sure that the force from itself on itself isn't being calculated
             if body_number != self_index
                 && system[body_number].mass > COLLISION_MIN_MASS
@@ -62,7 +58,7 @@ impl Particle {
     ) -> f64 {
         let mut energy: f64 = 0.;
 
-        for body_number in (self_index + 1)..NUMBER_OF_BODIES {
+        for body_number in (self_index + 1)..system.len() {
             if system[body_number].mass > COLLISION_MIN_MASS && self.mass > COLLISION_MIN_MASS {
                 let distance: f64 = (system[body_number].position - self.position).length();
                 energy += -G * self.mass * system[body_number].mass / (distance);
@@ -86,7 +82,11 @@ impl Particle {
     }
 }
 
-pub fn calculate_orbital_speed(center_object_mass: &f64, center_object_position: &DVec2, position: DVec2) -> f64 {
+pub fn calculate_orbital_speed(
+    center_object_mass: &f64,
+    center_object_position: &DVec2,
+    position: DVec2,
+) -> f64 {
     let distance = (*center_object_position - position).length();
     let speed = ((*center_object_mass * G) / distance).sqrt();
     speed
@@ -99,7 +99,7 @@ pub fn scale_window(distance: f64) -> f32 {
 
 pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
     let mut total_energy: f64 = 0.;
-    for i in 0..NUMBER_OF_BODIES {
+    for i in 0..system.len() {
         if system[i].mass != 0.0 {
             total_energy += system[i].kinetic_energy;
         }
@@ -109,8 +109,8 @@ pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
 
 pub fn collision_engine(system: &mut Vec<Particle>) -> u32 {
     let mut number_of_collisions: u32 = 0;
-    for i in 0..NUMBER_OF_BODIES {
-        for j in i + 1..NUMBER_OF_BODIES {
+    for i in 0..system.len() {
+        for j in i + 1..system.len() {
             if (system[i].position - system[j].position).length()
                 < system[i].radius + system[j].radius
                 && system[i].mass > COLLISION_MIN_MASS
@@ -149,25 +149,19 @@ pub fn collision_engine(system: &mut Vec<Particle>) -> u32 {
     number_of_collisions
 }
 
-pub fn add_physical_data(
-    system: &Vec<Particle>,
-    time: f64,
-    wtr: &mut Writer<File>,
-    rows: usize,
-) {
-    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] =
-        std::array::from_fn(|_| String::from(""));
+pub fn add_physical_data(system: &Vec<Particle>, time: f64, wtr: &mut Writer<File>, rows: usize) {
+    let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
 
     newline[0] = time.to_string();
 
-    for i in 0..NUMBER_OF_BODIES {
+    for i in 0..system.len() {
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = system[i].position[0].to_string();
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] = system[i].position[1].to_string();
     }
 
     if rows % ENERGY_INTERVAL == 0 {
         let total_kinetic_energy = find_system_kinetic_energy(&system);
-        let gravitational_energies: Vec<f64> = (0..NUMBER_OF_BODIES)
+        let gravitational_energies: Vec<f64> = (0..system.len())
             .into_par_iter()
             .map(|i| system[i].find_potential_gravitational_energy(&system, i))
             .collect();
@@ -187,14 +181,14 @@ pub fn add_physical_data(
 }
 
 pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) {
-    let mut newline: [String; NUMBER_OF_BODIES * COLUMNS_PER_OBJECT + LEFT_PAD] =
-        std::array::from_fn(|_| String::from(""));
+    let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
+
     newline[0] = String::from("Time");
     newline[1] = String::from("Kinetic Energy");
     newline[2] = String::from("Gravitational Potential Energy");
     newline[3] = String::from("Total Energy");
 
-    for i in 0..NUMBER_OF_BODIES {
+    for i in 0..system.len() {
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!(
             "Position in X of {} with mass {:2e}",
             system[i].name, system[i].mass
@@ -209,7 +203,7 @@ pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) {
 }
 
 pub fn draw_bodies(system: &Vec<Particle>) {
-    for i in 0..NUMBER_OF_BODIES {
+    for i in 0..system.len() {
         draw_circle(
             scale_window(system[i].position[0]),
             scale_window(system[i].position[1]),
@@ -298,13 +292,13 @@ pub fn draw_trails(
     }
 }
 
-
-
 pub fn get_number_from_user(text: &str) -> f32 {
     loop {
         let mut user_input: String = String::new();
         println!("{}", text);
-        io::stdin().read_line(&mut user_input).expect("Failed to read line");
+        io::stdin()
+            .read_line(&mut user_input)
+            .expect("Failed to read line");
         match user_input.trim().parse::<f32>() {
             Ok(number) => return number,
             Err(_) => println!("Invalid input. Please enter a valid number."),
