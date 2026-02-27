@@ -72,7 +72,7 @@ pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, sce
             let center_object_values = CenterObjectExists(system[0].mass, system[0].position);
             let mut earth_number= 0;
             loop {
-                earth_number = get_number_from_user(&format!("How many Earths (max {})? ", EARTH_NUMBER_MAX)) as usize;
+                earth_number = get_number_from_user(&format!("How many Earths? (max {})", EARTH_NUMBER_MAX)) as usize;
                 if earth_number < EARTH_NUMBER_MAX {
                     break;
                 } else {
