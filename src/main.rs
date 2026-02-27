@@ -73,7 +73,7 @@ async fn main() {
         important_bodies_added];
 
     let my_file = if file_write {
-        Some(File::create(format!("orbital_simulation_{}_accuracy_{}.csv", init_output.scenario_name, ticks_per_frame).replace(' ', "")).unwrap())
+        Some(File::create(format!("target/orbital_simulation_{}_accuracy_{}.csv", init_output.scenario_name, ticks_per_frame).replace(' ', "")).unwrap())
     } else {
         None
     };
