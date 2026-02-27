@@ -48,7 +48,7 @@ pub const COLLIDED_POSITION: DVec2 =
 pub const ROW_LIMIT: usize = 16000;
 pub const ENERGY_INTERVAL: usize = 1;
 pub const YEARS_OF_WRITING_SPIRO: f32 = 8.0;
-pub const YEARS_OF_WRITING_FIG8: f32 = 240.;
+pub const YEARS_OF_WRITING_FIG8: f32 = 1000.0;
 
 
 pub const LEFT_PAD: usize = 4;

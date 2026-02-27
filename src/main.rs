@@ -22,7 +22,7 @@ fn gravity_conf() -> Conf {
 }
 #[macroquad::main(gravity_conf)]
 async fn main() {
-    let scenario_key_list: Vec<ScenarioKey> = vec!(ScenarioKey::Scenario("Spirograph".to_string(), 0), ScenarioKey::Scenario("Figure 8".to_string(), 1));
+    let scenario_key_list: Vec<ScenarioKey> = vec!(ScenarioKey("Spirograph".to_string(), 0), ScenarioKey("Figure 8".to_string(), 1));
 
 
 
@@ -30,10 +30,17 @@ async fn main() {
     let trails = take_user_choice("Do you want to have trails? ");
     let collisions = take_user_choice("Do you want to have collisions? ");
     let mut names_of_scenarios: String = "".to_string();
-    for ScenarioKey::Scenario(a, b) in &scenario_key_list {
-    names_of_scenarios.push_str(&format!("\n[{}] {} Scenario", b, a));
+    for ScenarioKey(a, b) in &scenario_key_list {
+        names_of_scenarios.push_str(&format!("\n[{}] {} Scenario", b, a));
     }
-    let scenario: usize = get_number_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str()) as usize;
+    let scenario = loop {
+        let scenario: usize = get_pos_int_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str()) as usize;
+
+        if scenario_key_list.iter().any(|k| k.1 == scenario) {
+            break scenario;
+        }
+        println!("Invalid scenario");
+    };
     let mut total_bodies_added = 0;
     let mut important_bodies_added = 0;
     let mut system: Vec<Particle> = Vec::new();

@@ -7,12 +7,9 @@ use macroquad::rand::gen_range;
 use std::f64::consts::TAU;
 use std::string::ToString;
 use crate::init_helpers::CenterObjectValues::CenterObjectExists;
-use crate::init_helpers::ScenarioKey::Scenario;
 
 #[derive(Debug)]
-pub enum ScenarioKey {
-    Scenario(String, usize),
-}
+pub struct ScenarioKey(pub String, pub usize);
 
 
 pub enum Variance {
@@ -41,7 +38,7 @@ pub struct ConfigValues {
 
 pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, scenario_list: &Vec<ScenarioKey>) -> ConfigValues {
     let scenario_name = scenario_list.iter().find_map(|k| match k {
-        Scenario(name, key) if *key == scenario => Some(name.as_str()),
+        ScenarioKey(name, key) if *key == scenario => Some(name.as_str()),
         _ => None,
     }).expect("Invalid scenario key");
     let mut total_bodies_added = 0;

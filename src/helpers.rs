@@ -309,3 +309,16 @@ pub fn get_number_from_user(text: &str) -> f32 {
         }
     }
 }
+pub fn get_pos_int_from_user(text: &str) -> u32 {
+    loop {
+        let mut user_input: String = String::new();
+        println!("{}", text);
+        io::stdin()
+            .read_line(&mut user_input)
+            .expect("Failed to read line");
+        match user_input.trim().parse::<u32>() {
+            Ok(number) => return number,
+            Err(_) => println!("Invalid input. Please enter a valid number."),
+        }
+    }
+}
