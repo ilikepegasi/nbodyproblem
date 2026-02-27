@@ -1,6 +1,5 @@
 use macroquad::prelude::*;
 use rayon::prelude::*;
-use std::f64::consts::TAU;
 use std::fs::File;
 
 mod constants;
@@ -12,7 +11,6 @@ use helpers::*;
 use init_helpers::*;
 
 // TODO: Implement volume as a trait of Particle
-// TODO: Implement scenarios: this would be spirograph/s, and I want to implement figure 8/f
 
 fn gravity_conf() -> Conf {
     Conf {
@@ -37,14 +35,17 @@ async fn main() {
     }
     let scenario: usize = get_number_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str()) as usize;
     let mut total_bodies_added = 0;
-    let mut num_important_bodies = 0;
+    let mut important_bodies_added = 0;
     let mut system: Vec<Particle> = Vec::new();
+
     let init_output = initialize_from_scenario(scenario, &mut system, &scenario_key_list);
-    total_bodies_added += init_output.0;
-    num_important_bodies += init_output.1;
-    
-    let dt = init_output.2;
-    let data_interval: usize = (SIM_SECONDS_PER_DATA_ROW / dt) as usize;
+    total_bodies_added += init_output.total_bodies_added;
+    important_bodies_added += init_output.important_bodies_added;
+    let ticks_per_frame = init_output.ticks_per_frame;
+    let sim_seconds_per_data_row: f64 =
+        init_output.years_of_writing as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
+    let dt = init_output.dt;
+    let data_interval: usize = (sim_seconds_per_data_row / dt) as usize;
 
 
     assert_eq!(total_bodies_added, system.len());
@@ -57,32 +58,15 @@ async fn main() {
     let mut total_physics_ticks: usize = 0;
     let mut seconds_passed_in_sim: f64 = 0.0;
 
-    let minimum_speed_color = calculate_orbital_speed(
-        &system[0].mass,
-        &system[0].position,
-        DVec2::new(
-            system[0].position.x,
-            system[0].position.y + MAX_RADIUS_MIN_COLOR,
-        ),
-    )
-    .log10() as f32;
-    let maximum_speed_color = calculate_orbital_speed(
-        &system[0].mass,
-        &system[0].position,
-        DVec2::new(
-            system[0].position.x,
-            system[0].position.y + MIN_RADIUS_MAX_COLOR,
-        ),
-    )
-    .log10() as f32;
+
 
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
     let mut trail_values: Vec<Vec<(DVec2, Color)>> = vec![
-        vec![(DVec2::new(0., 0.), WHITE); OLD_FRAME_LIMIT];
-        num_important_bodies];
+        vec![(DVec2::new(0., 0.), WHITE); init_output.trail_length];
+        important_bodies_added];
 
     let my_file = if file_write {
-        Some(File::create(format!("orbital_simulation_{}.csv", TICKS_PER_FRAME)).unwrap())
+        Some(File::create(format!("orbital_simulation_{}_accuracy_{}.csv", init_output.scenario_name, ticks_per_frame).replace(' ', "")).unwrap())
     } else {
         None
     };
@@ -107,7 +91,7 @@ async fn main() {
     loop {
         clear_background(BLACK);
 
-        for _i in 0..TICKS_PER_FRAME {
+        for _i in 0..ticks_per_frame {
             total_physics_ticks += 1;
             /* Parallel calculation of all the forces acting on the bodies using the
             calculate_g_force method */
@@ -147,12 +131,13 @@ async fn main() {
 
         if trails {
             draw_trails(
-                num_important_bodies,
+                important_bodies_added,
                 &system,
                 &mut trail_point_counter,
                 &mut trail_values,
-                minimum_speed_color,
-                maximum_speed_color,
+                init_output.color_vel_range.0 as f32,
+                init_output.color_vel_range.1 as f32,
+                &init_output,
             );
         }
 
@@ -173,7 +158,7 @@ async fn main() {
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
         let mut info_on_screen = format!(
             "Years Passed: {:.5}/{:.2} | Total Physics Ticks: {}",
-            &years_passed_in_sim, &YEARS_OF_WRITING, total_physics_ticks
+            &years_passed_in_sim, &init_output.years_of_writing, total_physics_ticks
         );
         draw_text(
             &info_on_screen,

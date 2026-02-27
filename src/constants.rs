@@ -32,11 +32,14 @@ pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
 pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;
 pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
 pub const DEFAULT_ANGULAR_OFFSET: f64 = 0.;
-pub const FIGURE_8_SECONDS_PER_FRAME: f64 = 8e8;
+pub const FIGURE_8_SECONDS_PER_FRAME: f64 = 8e6;
 pub const SPIRO_SECONDS_PER_FRAME: f64 = 2e4;
 
-pub const TICKS_PER_FRAME: usize = 120;
-pub const EARTH_NUMBER: usize = 360;
+pub const TICKS_PER_FRAME_FIG8: usize = 120;
+pub const TICKS_PER_FRAME_SPIRO: usize = 20;
+
+
+pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =
     DVec2::new(EARTH_ORBITAL_RADIUS * 1e8, EARTH_ORBITAL_RADIUS * 1e8);
@@ -44,17 +47,19 @@ pub const COLLIDED_POSITION: DVec2 =
 // Data Parameters
 pub const ROW_LIMIT: usize = 16000;
 pub const ENERGY_INTERVAL: usize = 1;
-pub const YEARS_OF_WRITING: f32 = 8.0;
+pub const YEARS_OF_WRITING_SPIRO: f32 = 8.0;
+pub const YEARS_OF_WRITING_FIG8: f32 = 240.;
 
-pub const SIM_SECONDS_PER_DATA_ROW: f64 =
-    YEARS_OF_WRITING as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
+
 pub const LEFT_PAD: usize = 4;
 pub const COLUMNS_PER_OBJECT: usize = 2;
 
 // Graphics Parameters
 pub const SCREEN_SIZE: i32 = 1000;
 pub const SCALING_FACTOR: f64 = 2.5;
-pub const OLD_FRAME_LIMIT: usize = 2usize.pow(9);
+pub const OLD_FRAME_LIMIT_SPIRO: usize = 2usize.pow(9);
+pub const OLD_FRAME_LIMIT_FIG8: usize = 2usize.pow(11);
+
 pub const SMALL_RADIUS: f64 = COMET_RADIUS;
 pub const MAX_TRAIL_LINE_LEN: f32 = EARTH_ORBITAL_RADIUS as f32;
 pub const WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);

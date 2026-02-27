@@ -1,4 +1,6 @@
 use crate::constants::*;
+use crate::init_helpers::*;
+
 use csv::Writer;
 use macroquad::prelude::*;
 use macroquad::{color, color::Color, math::DVec2};
@@ -6,6 +8,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::fmt::Display;
 use std::fs::File;
 use std::io;
+
 
 pub struct Particle {
     //Particle struct representing different values of bodies being simulated
@@ -257,26 +260,27 @@ pub fn draw_trails(
     trail_values: &mut Vec<Vec<(DVec2, Color)>>,
     log_min_speed: f32,
     log_max_speed: f32,
+    init_output: &ConfigValues,
 ) {
     for i in 0..num_important_bodies {
-        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT].0 = system[i].position;
-        trail_values[i][*trail_point_counter % OLD_FRAME_LIMIT].1 = velocity_to_color(system[i].velocity, log_min_speed, log_max_speed);
+        trail_values[i][*trail_point_counter % init_output.trail_length].0 = system[i].position;
+        trail_values[i][*trail_point_counter % init_output.trail_length].1 = velocity_to_color(system[i].velocity, log_min_speed, log_max_speed);
     }
     *trail_point_counter += 1;
 
-    let recent_point = *trail_point_counter % OLD_FRAME_LIMIT;
+    let recent_point = *trail_point_counter % init_output.trail_length;
     let gap_point = if recent_point == 0 {
-        OLD_FRAME_LIMIT - 1
+        init_output.trail_length - 1
     } else {
         recent_point - 1
     };
     // Draws the trail using old_positions
 
     for i in 0..num_important_bodies {
-        for j in 0..OLD_FRAME_LIMIT.min(*trail_point_counter) {
+        for j in 0..init_output.trail_length.min(*trail_point_counter) {
             if j != gap_point {
                 let pos_1 = trail_values[i][j].0;
-                let pos_2 = trail_values[i][(j + 1) % OLD_FRAME_LIMIT].0;
+                let pos_2 = trail_values[i][(j + 1) % init_output.trail_length].0;
                 if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
                     draw_line(
                         scale_window(pos_1[0]),

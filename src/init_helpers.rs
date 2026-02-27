@@ -1,6 +1,6 @@
 use std::alloc::System;
 use crate::constants::*;
-use crate::helpers::{Particle, calculate_orbital_speed};
+use crate::helpers::{Particle, calculate_orbital_speed, get_number_from_user};
 use macroquad::color::*;
 use macroquad::math::DVec2;
 use macroquad::rand::gen_range;
@@ -26,15 +26,34 @@ pub enum CenterObjectValues {
 }
 
 
-pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, scenario_list: &Vec<ScenarioKey>) -> (usize, usize, f64) {
+pub struct ConfigValues {
+    pub scenario_name: String,
+    pub total_bodies_added: usize,
+    pub important_bodies_added: usize,
+    pub sim_seconds_per_frame: f64,
+    pub ticks_per_frame: usize,
+    pub dt: f64,
+    pub color_vel_range: (f64, f64),
+    pub trail_length: usize,
+    pub years_of_writing: f32,
+}
+
+
+pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, scenario_list: &Vec<ScenarioKey>) -> ConfigValues {
     let scenario_name = scenario_list.iter().find_map(|k| match k {
         Scenario(name, key) if *key == scenario => Some(name.as_str()),
         _ => None,
     }).expect("Invalid scenario key");
     let mut total_bodies_added = 0;
     let mut sim_seconds_per_frame = 2e4;
+    let mut ticks_per_frame = 1;
+    let mut important_bodies_added = 0;
 
-    let mut num_important_bodies = 0;
+    let mut minimum_speed_color: f64 = 0.;
+    let mut maximum_speed_color: f64 = 1.;
+    let mut years_of_writing = 0.;
+    let mut trail_length: usize = 0;
+
     match scenario_name {
         "Spirograph" => {
             let mut star: Particle = Particle {
@@ -48,12 +67,20 @@ pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, sce
             };
             star.update_kinetic_energy();
             system.push(star);
-            num_important_bodies += 1;
+            important_bodies_added += 1;
             total_bodies_added += 1;
             let center_object_values = CenterObjectExists(system[0].mass, system[0].position);
-
+            let mut earth_number= 0;
+            loop {
+                earth_number = get_number_from_user(&format!("How many Earths (max {})? ", EARTH_NUMBER_MAX)) as usize;
+                if earth_number < EARTH_NUMBER_MAX {
+                    break;
+                } else {
+                    println!("Invalid Earth number: {}", earth_number);
+                }
+            }
             let bodies_values_delta = initialize_bodies_spiro(
-                &EARTH_NUMBER,
+                &earth_number,
                 &total_bodies_added,
                 &(EARTH_ORBITAL_RADIUS),
                 &EARTH_MASS,
@@ -67,28 +94,67 @@ pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, sce
                 &center_object_values,
                 "Planet",
             );
-            sim_seconds_per_frame = FIGURE_8_SECONDS_PER_FRAME;
+            sim_seconds_per_frame = SPIRO_SECONDS_PER_FRAME;
+            years_of_writing = YEARS_OF_WRITING_SPIRO;
 
             total_bodies_added += bodies_values_delta.0;
-            num_important_bodies += bodies_values_delta.1;
+            important_bodies_added += bodies_values_delta.1;
             println!("Spirograph scenario initialized with key {}", scenario);
+            ticks_per_frame = TICKS_PER_FRAME_SPIRO;
 
+            trail_length = OLD_FRAME_LIMIT_SPIRO;
+            minimum_speed_color = calculate_orbital_speed(
+                &system[0].mass,
+                &system[0].position,
+                DVec2::new(
+                    system[0].position.x,
+                    system[0].position.y + MAX_RADIUS_MIN_COLOR,
+                ),
+            ).log10();
+            maximum_speed_color = calculate_orbital_speed(
+                &system[0].mass,
+                &system[0].position,
+                DVec2::new(
+                    system[0].position.x,
+                    system[0].position.y + MIN_RADIUS_MAX_COLOR,
+                ),
+            ).log10();
         }
         "Figure 8" => {
             let bodies_values_delta = initialize_figure_8_scenario(system, &EARTH_ORBITAL_RADIUS, &EARTH_MASS, &EARTH_RADIUS);
             total_bodies_added += bodies_values_delta.0;
-            num_important_bodies += bodies_values_delta.1;
+            important_bodies_added += bodies_values_delta.1;
             println!("Figure 8 initialized with scale {} AU", &EARTH_ORBITAL_RADIUS / &EARTH_ORBITAL_RADIUS);
-            for body in system {
+            for body in system.iter() {
                 println!("{}", body.position/EARTH_ORBITAL_RADIUS);
 
             }
-            sim_seconds_per_frame = SPIRO_SECONDS_PER_FRAME;
-
+            trail_length = OLD_FRAME_LIMIT_FIG8;
+            years_of_writing = YEARS_OF_WRITING_FIG8;
+            sim_seconds_per_frame = FIGURE_8_SECONDS_PER_FRAME;
+            ticks_per_frame = TICKS_PER_FRAME_FIG8;
+            minimum_speed_color = system[0].velocity.length().log10();
+            maximum_speed_color = system[2].velocity.length().log10();
         }
         _ => {unreachable!("Initialization failed")}
     }
-    (total_bodies_added, num_important_bodies, sim_seconds_per_frame)
+
+
+
+
+    let dt = sim_seconds_per_frame / ticks_per_frame as f64;
+    let config_values: ConfigValues = ConfigValues {
+        scenario_name: scenario_name.to_string(),
+        total_bodies_added,
+        important_bodies_added,
+        sim_seconds_per_frame,
+        ticks_per_frame,
+        dt,
+        color_vel_range: (minimum_speed_color, maximum_speed_color),
+        trail_length,
+        years_of_writing,
+    };
+    config_values
 }
 
 
@@ -200,4 +266,10 @@ pub fn initialize_figure_8_scenario(system: &mut Vec<Particle>, length_scale: &f
     (3,3)
 }
 
+pub fn initialize_solar_system(system: &mut Vec<Particle>) {
+
+}
+pub fn add_moon(system: &mut Vec<Particle>, home_body: &Particle) -> (usize, usize) {
+    (0,0)
+}
 
