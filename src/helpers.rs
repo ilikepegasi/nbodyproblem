@@ -18,7 +18,6 @@ pub struct Particle {
     pub radius: f64,     // In meters
     pub color: Color,
     pub name: String,
-    pub kinetic_energy: f64,
 }
 
 impl Particle {
@@ -71,8 +70,8 @@ impl Particle {
         energy
     }
 
-    pub fn update_kinetic_energy(&mut self) {
-        self.kinetic_energy = 0.5 * self.velocity.length().powf(2.) * self.mass;
+    pub fn calculate_kinetic_energy(&self) -> f64 {
+        0.5 * self.velocity.length().powf(2.) * self.mass
     }
 
     pub fn generate_visible_radius(&self) -> f32 {
@@ -104,7 +103,7 @@ pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
     let mut total_energy: f64 = 0.;
     for i in 0..system.len() {
         if system[i].mass != 0.0 {
-            total_energy += system[i].kinetic_energy;
+            total_energy += system[i].calculate_kinetic_energy();
         }
     }
     total_energy

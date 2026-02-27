@@ -60,9 +60,7 @@ pub fn initialize_from_scenario(scenario: usize, system: &mut Vec<Particle>, sce
                 radius: STAR_RADIUS,
                 color: YELLOW,
                 name: String::from("Sun"),
-                kinetic_energy: 0.,
             };
-            star.update_kinetic_energy();
             system.push(star);
             important_bodies_added += 1;
             total_bodies_added += 1;
@@ -212,9 +210,7 @@ pub fn initialize_bodies_spiro(
             radius: *radius,
             color: *color,
             name: String::from(format!("{} {}", category_name, i + 1)),
-            kinetic_energy: 0.,
         };
-        new_body.update_kinetic_energy();
         system.push(new_body);
         if system[i + *num_bodies_added].mass >= IMPORTANT_BODY_MASS_MIN {
             num_important_bodies_added += 1;
@@ -254,9 +250,7 @@ pub fn initialize_figure_8_scenario(system: &mut Vec<Particle>, length_scale: &f
             radius: *body_radii,
             color: [RED, BLUE, GREEN][i],
             name: format!("Figure 8 Body {}", i),
-            kinetic_energy: 0.0,
         };
-        new_body.update_kinetic_energy();
         system.push(new_body);
     }
 

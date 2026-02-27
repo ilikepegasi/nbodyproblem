@@ -120,7 +120,6 @@ async fn main() {
                 .collect();
             for i in 0..system.len() {
                 system[i].kick(forces[i], dt);
-                system[i].update_kinetic_energy();
             }
             if collisions {
                 collision_counter += collision_engine(&mut system)

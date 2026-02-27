@@ -1,5 +1,6 @@
 use macroquad::math::DVec2;
 // Masses in kilograms
+
 pub const STAR_MASS: f64 = 1.9891e30;
 pub const EARTH_MASS: f64 = 5.9722e24;
 pub const COMET_MASS: f64 = 2.2e14;
