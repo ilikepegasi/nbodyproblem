@@ -7,6 +7,8 @@ use constants::*;
 
 mod helpers;
 mod init_helpers;
+pub mod horizon;
+
 use helpers::*;
 use init_helpers::*;
 

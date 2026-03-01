@@ -1,4 +1,11 @@
 use macroquad::math::DVec2;
+pub struct body_consistent_values {
+    mass: f64,
+    radius: f64,
+}
+
+
+
 // Masses in kilograms
 
 pub const STAR_MASS: f64 = 1.9891e30;
