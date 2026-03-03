@@ -5,10 +5,8 @@ use csv::Writer;
 use macroquad::prelude::*;
 use macroquad::{color, color::Color, math::DVec2};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::fmt::Display;
 use std::fs::File;
 use std::io;
-
 
 pub struct Particle {
     //Particle struct representing different values of bodies being simulated
@@ -263,7 +261,8 @@ pub fn draw_trails(
 ) {
     for i in 0..num_important_bodies {
         trail_values[i][*trail_point_counter % init_output.trail_length].0 = system[i].position;
-        trail_values[i][*trail_point_counter % init_output.trail_length].1 = velocity_to_color(system[i].velocity, log_min_speed, log_max_speed);
+        trail_values[i][*trail_point_counter % init_output.trail_length].1 =
+            velocity_to_color(system[i].velocity, log_min_speed, log_max_speed);
     }
     *trail_point_counter += 1;
 

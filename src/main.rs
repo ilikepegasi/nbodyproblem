@@ -6,8 +6,8 @@ mod constants;
 use constants::*;
 
 mod helpers;
-mod init_helpers;
 pub mod horizon;
+mod init_helpers;
 
 use helpers::*;
 use init_helpers::*;
@@ -24,9 +24,10 @@ fn gravity_conf() -> Conf {
 }
 #[macroquad::main(gravity_conf)]
 async fn main() {
-    let scenario_key_list: Vec<ScenarioKey> = vec!(ScenarioKey("Spirograph".to_string(), 0), ScenarioKey("Figure 8".to_string(), 1));
-
-
+    let scenario_key_list: Vec<ScenarioKey> = vec![
+        ScenarioKey("Spirograph".to_string(), 0),
+        ScenarioKey("Figure 8".to_string(), 1),
+    ];
 
     let file_write = take_user_choice("Do you want to write to a file? ");
     let trails = take_user_choice("Do you want to have trails? ");
@@ -36,7 +37,9 @@ async fn main() {
         names_of_scenarios.push_str(&format!("\n[{}] {} Scenario", b, a));
     }
     let scenario = loop {
-        let scenario: usize = get_pos_int_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str()) as usize;
+        let scenario: usize =
+            get_pos_int_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str())
+                as usize;
 
         if scenario_key_list.iter().any(|k| k.1 == scenario) {
             break scenario;
@@ -56,7 +59,6 @@ async fn main() {
     let dt = init_output.dt;
     let data_interval: usize = (sim_seconds_per_data_row / dt) as usize;
 
-
     assert_eq!(total_bodies_added, system.len());
     // Generates a number of comets with varying masses, positions, and velocities
 
@@ -67,15 +69,21 @@ async fn main() {
     let mut total_physics_ticks: usize = 0;
     let mut seconds_passed_in_sim: f64 = 0.0;
 
-
-
     // old_positions stores for a decided amount of frames the past the positions of all bodies to draw later
-    let mut trail_values: Vec<Vec<(DVec2, Color)>> = vec![
-        vec![(DVec2::new(0., 0.), WHITE); init_output.trail_length];
-        important_bodies_added];
+    let mut trail_values: Vec<Vec<(DVec2, Color)>> =
+        vec![vec![(DVec2::new(0., 0.), WHITE); init_output.trail_length]; important_bodies_added];
 
     let my_file = if file_write {
-        Some(File::create(format!("target/orbital_simulation_{}_accuracy_{}.csv", init_output.scenario_name, ticks_per_frame).replace(' ', "")).unwrap())
+        Some(
+            File::create(
+                format!(
+                    "target/orbital_simulation_{}_accuracy_{}.csv",
+                    init_output.scenario_name, ticks_per_frame
+                )
+                .replace(' ', ""),
+            )
+            .unwrap(),
+        )
     } else {
         None
     };

@@ -4,14 +4,10 @@ pub struct body_consistent_values {
     radius: f64,
 }
 
-
-
 // Masses in kilograms
 
 pub const STAR_MASS: f64 = 1.9891e30;
 pub const EARTH_MASS: f64 = 5.9722e24;
-pub const COMET_MASS: f64 = 2.2e14;
-pub const JUPITER_MASS: f64 = 1.898e27;
 
 // Body Radii in meters
 pub const EARTH_RADIUS: f64 = 6.3781e6;
@@ -46,7 +42,6 @@ pub const SPIRO_SECONDS_PER_FRAME: f64 = 2e4;
 pub const TICKS_PER_FRAME_FIG8: usize = 120;
 pub const TICKS_PER_FRAME_SPIRO: usize = 20;
 
-
 pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =
@@ -57,7 +52,6 @@ pub const ROW_LIMIT: usize = 16000;
 pub const ENERGY_INTERVAL: usize = 1;
 pub const YEARS_OF_WRITING_SPIRO: f32 = 8.0;
 pub const YEARS_OF_WRITING_FIG8: f32 = 1000.0;
-
 
 pub const LEFT_PAD: usize = 4;
 pub const COLUMNS_PER_OBJECT: usize = 2;
