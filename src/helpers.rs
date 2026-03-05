@@ -180,7 +180,7 @@ pub fn add_physical_data(system: &Vec<Particle>, time: f64, wtr: &mut Writer<Fil
     wtr.flush().unwrap();
 }
 
-pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) {
+pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::Result<(())> {
     let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
 
     newline[0] = String::from("Time");
@@ -198,8 +198,9 @@ pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) {
             system[i].name, system[i].mass
         ));
     }
-    wtr.write_record(newline).unwrap();
-    wtr.flush().unwrap();
+    wtr.write_record(newline)?;
+    wtr.flush()?;
+    Ok(())
 }
 
 pub fn draw_bodies(system: &Vec<Particle>) {
