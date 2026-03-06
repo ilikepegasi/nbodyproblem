@@ -1,15 +1,34 @@
 use macroquad::math::DVec2;
-pub struct body_consistent_values {
-    mass: f64,
-    radius: f64,
-}
 
 // Masses in kilograms
 
 pub const STAR_MASS: f64 = 1.9891e30;
 pub const EARTH_MASS: f64 = 5.9722e24;
-
+pub static BODY_MASS_KG: phf::Map<&str, f64> = phf::phf_map! {
+    "mercury" => 3.301e+23,
+    "venus"   => 4.867e+24,
+    "earth"   => 5.972e+24,
+    "mars"    => 6.417e+23,
+    "jupiter" => 1.898e+27,
+    "saturn"  => 5.683e+26,
+    "uranus"  => 8.681e+25,
+    "neptune" => 1.024e+26,
+    "luna"    => 7.342e+22,
+    "sun"     => 1.989e+30,
+};
 // Body Radii in meters
+pub static BODY_RADIUS_M: phf::Map<&str, f64> = phf::phf_map! {
+    "mercury" => 2.439e+06,
+    "venus"   => 6.051e+06,
+    "earth"   => 6.371e+06,
+    "mars"    => 3.389e+06,
+    "jupiter" => 6.991e+07,
+    "saturn"  => 5.823e+07,
+    "uranus"  => 2.536e+07,
+    "neptune" => 2.462e+07,
+    "luna"    => 1.737e+06,
+    "sun"     => 6.957e+08,
+};
 pub const EARTH_RADIUS: f64 = 6.3781e6;
 pub const STAR_RADIUS: f64 = 6.957e8;
 pub const COMET_RADIUS: f64 = 7.4e3;
@@ -31,17 +50,20 @@ pub const SECONDS_IN_YEAR: f64 = 31556926.; // seconds/year
 pub const COLLISION_MIN_MASS: f64 = 1.0;
 
 // Simulation Initialization Parameters
-pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
-pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
-pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;
-pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
+//pub const COMET_MASS_VARIANCE_MAX: f64 = 0.8;
+//pub const COMET_ORBITAL_RADIUS_VARIANCE_MAX: f64 = 1.2;
+//pub const COMET_MASS_VARIANCE_MIN: f64 = 0.8;
+//pub const COMET_ORBITAL_RADIUS_VARIANCE_MIN: f64 = 0.01;
 pub const DEFAULT_ANGULAR_OFFSET: f64 = 0.;
 pub const FIGURE_8_SECONDS_PER_FRAME: f64 = 8e6;
 pub const SPIRO_SECONDS_PER_FRAME: f64 = 2e4;
+pub const SOLAR_SYS_SECONDS_PER_FRAME: f64 = 4e4;
 
 pub const TICKS_PER_FRAME_FIG8: usize = 120;
+
 pub const TICKS_PER_FRAME_SPIRO: usize = 20;
 
+pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 30;
 pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =
@@ -58,25 +80,25 @@ pub const COLUMNS_PER_OBJECT: usize = 2;
 
 // Graphics Parameters
 pub const SCREEN_SIZE: i32 = 1000;
-pub const SCALING_FACTOR: f64 = 2.5;
+pub const SCALING_FACTOR_SPIRO: f64 = 2.5;
+pub const SCALING_FACTOR_FIG8: f64 = 2.5;
+pub const SCALING_FACTOR_SOLAR_SYSTEM: f64 = 65.0;
 pub const OLD_FRAME_LIMIT_SPIRO: usize = 2usize.pow(9);
 pub const OLD_FRAME_LIMIT_FIG8: usize = 2usize.pow(11);
+pub const OLD_FRAME_LIMIT_SOLAR_SYS: usize = 2usize.pow(11);
 
-pub const SMALL_RADIUS: f64 = COMET_RADIUS;
+
+pub const SMALL_RADIUS: f64 = EARTH_RADIUS/10.;
 pub const MAX_TRAIL_LINE_LEN: f32 = EARTH_ORBITAL_RADIUS as f32;
-pub const WINDOW_FACTOR: f64 = (SCREEN_SIZE as f64) / (SCALING_FACTOR * EARTH_ORBITAL_RADIUS);
 pub const MIN_RADIUS_MAX_COLOR: f64 = 0.2 * EARTH_ORBITAL_RADIUS;
 pub const MAX_RADIUS_MIN_COLOR: f64 = 1.0 * EARTH_ORBITAL_RADIUS;
 pub const MAX_VIOLET_HUE: f32 = 0.72;
-pub const MIN_RED_HUE: f32 = 0.0;
+//pub const MIN_RED_HUE: f32 = 0.0;
 
 pub const IMPORTANT_BODY_MASS_MIN: f64 = 0.2 * EARTH_MASS;
 
 // Graphical Sizes
 pub const TRAIL_RADIUS: f32 = 1.;
-pub const MAX_RADIUS_PIXELS: f32 = 8.0;
+pub const MAX_RADIUS_PIXELS: f32 = 4.0;
 pub const MIN_RADIUS_PIXELS: f32 = 1.0;
-pub const CENTER_COORDS: DVec2 = DVec2::new(
-    SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS,
-    SCALING_FACTOR * 0.5 * EARTH_ORBITAL_RADIUS,
-);
+

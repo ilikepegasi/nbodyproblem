@@ -1,42 +1,15 @@
 use crate::helpers::take_user_choice;
 use chrono::prelude::*;
+use macroquad::color::Color;
+use macroquad::prelude::*;
+use phf;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
-use std::io::repeat;
 use std::path::Path;
 use std::time::Duration;
 use ureq::Agent;
-use macroquad::prelude::*;
-use macroquad::color::Color;
-use macroquad::miniquad::native::apple::apple_util::yes;
-use phf;
 
-static BODY_MASS_KG: phf::Map<&str, f64> = phf::phf_map! {
-    "mercury" => 3.301e+23,
-    "venus"   => 4.867e+24,
-    "earth"   => 5.972e+24,
-    "mars"    => 6.417e+23,
-    "jupiter" => 1.898e+27,
-    "saturn"  => 5.683e+26,
-    "uranus"  => 8.681e+25,
-    "neptune" => 1.024e+26,
-    "luna"    => 7.342e+22,
-    "sun"     => 1.989e+30,
-};
-
-static BODY_RADIUS_M: phf::Map<&str, f64> = phf::phf_map! {
-    "mercury" => 2.439e+06,
-    "venus"   => 6.051e+06,
-    "earth"   => 6.371e+06,
-    "mars"    => 3.389e+06,
-    "jupiter" => 6.991e+07,
-    "saturn"  => 5.823e+07,
-    "uranus"  => 2.536e+07,
-    "neptune" => 2.462e+07,
-    "luna"    => 1.737e+06,
-    "sun"     => 6.957e+08,
-};
 static HORIZONS_IDS: phf::Map<&str, u32> = phf::phf_map! {
     "mercury"   => 199,
     "venus"     => 299,
@@ -46,12 +19,12 @@ static HORIZONS_IDS: phf::Map<&str, u32> = phf::phf_map! {
     "saturn"    => 699,
     "uranus"    => 799,
     "neptune"   => 899,
-    "luna"      => 301,
+    //"luna"      => 301,
     "sun"       => 10,
 };
-static HORIZONS_COLORS: phf::Map<&str, Color> = phf::phf_map! {
+pub static HORIZONS_COLORS: phf::Map<&str, Color> = phf::phf_map! {
     "mercury"   => GRAY,
-    "venus"     => YELLOW,
+    "venus"     => Color::from_rgba(248, 226, 176, 200),
     "earth"     => BLUE,
     "mars"      => RED,
     "jupiter"   => ORANGE,
@@ -62,9 +35,9 @@ static HORIZONS_COLORS: phf::Map<&str, Color> = phf::phf_map! {
     "sun"       => YELLOW,
 };
 
-static MAJOR_BODIES: [&str; 10] = ["mercury", "sun", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "luna"];
-
-
+static MAJOR_BODIES: [&str; 9] = [
+    "mercury", "sun", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", //"luna",
+];
 
 /*
 $$SOE
@@ -80,7 +53,7 @@ $$EOE
  */
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct output_values {
+pub struct OutputValues {
     pub name: String,
     pub x: f64,
     pub y: f64,
@@ -88,105 +61,126 @@ pub struct output_values {
     pub vy: f64,
 }
 
+pub fn get_horizons_data() -> Vec<OutputValues> {
 
-pub fn get_horizons_data() -> Vec<output_values> {
-    let cache_choice = !take_user_choice("Get new data? ");
 
     let times = date_time_range();
-    let mut body_values: Vec<output_values> = Vec::new();
-    let mut i = 0;
+    let mut body_values: Vec<OutputValues> = Vec::new();
+
+    let mut horizon_data_files_names = Vec::new();
+    let mut can_use_cached_file = false;
     for body in MAJOR_BODIES.iter() {
         let horizons_data_file = format!("target/{}_data.txt", body);
+        horizon_data_files_names.push(horizons_data_file.clone());
 
-        let use_cached_file = if Path::new(horizons_data_file.as_str()).exists() {
-            cache_choice
+        can_use_cached_file = if Path::new(horizons_data_file.as_str()).exists() {
+            true
         } else {
-            let forced_choice = false;
-            println!("Generating new astrodata for {}", body);
-            forced_choice
+            println!("Generating new astrodata");
+            false
         };
 
+    }
 
-        let horizons_data = fetch_horizons_data(body.to_string(), use_cached_file, &times);
+    let cache_choice: bool = if can_use_cached_file
+        {
+            if Path::new("target/CacheInfo.txt").exists()
+                {
+                    println!("Cache Info: {}", fs::read_to_string("target/CacheInfo.txt").unwrap());
+                }
+            !take_user_choice("Get new data? ")
+        }
+    else {false};
+
+
+    for body in MAJOR_BODIES.iter() {
+
+        let horizons_data = fetch_horizons_data(body.to_string(), cache_choice, &times);
         match horizons_data {
             Ok(s) => {
-                body_values[i] = parse_horizons_body_data(s, body.to_string());
-            },
+                body_values.push(parse_horizons_body_data(s, body.to_string()));
+            }
             Err(e) => eprintln!("Error: {}", e),
         }
-        i += 1;
     }
-    body_values
 
+    body_values
 }
 
-fn parse_horizons_body_data(body_result: String, body_name: String) -> output_values {
+
+
+
+
+fn parse_horizons_body_data(body_result: String, body_name: String) -> OutputValues {
     let soe = body_result.find("$$SOE").expect("Could not find '$$SOE'");
     let eoe = body_result.find("$$EOE").expect("Could not find '$$EOE'");
 
-    let body_ephemeris = &body_result[5+soe..eoe].trim();
-    let ephemeris_lines: Vec<&str> = body_ephemeris.lines()
+    let body_ephemeris = &body_result[5 + soe..eoe].trim();
+    let ephemeris_lines: Vec<&str> = body_ephemeris
+        .lines()
         .map(|l| l.trim())
         .filter(|l| !l.is_empty())
         .collect();
 
-
-    let mut body_values: output_values = output_values {
+    let mut body_values: OutputValues = OutputValues {
         name: body_name,
         x: 0.0,
         y: 0.0,
         vx: 0.0,
         vy: 0.0,
-
     };
-    let data_start = ephemeris_lines.len()/2;
+    let data_start = ephemeris_lines.len() / 2;
     let data_end = ephemeris_lines.len();
     for data_line_id in data_start..data_end {
-        if data_line_id == 1  {
+        let relative_line_id = data_line_id - data_start;
+        if relative_line_id == 1 {
             body_values.x = parse_data_component("X", ephemeris_lines[data_line_id]);
             body_values.y = parse_data_component("Y", ephemeris_lines[data_line_id]);
-
-        } else if data_line_id == 2 {
+        } else if relative_line_id == 2 {
             body_values.vx = parse_data_component("VX", ephemeris_lines[data_line_id]);
             body_values.vy = parse_data_component("VY", ephemeris_lines[data_line_id]);
         }
     }
 
     body_values
-
 }
 
 fn parse_data_component(req_value: &str, line: &str) -> f64 {
-    let value_index: usize = line.find(req_value).expect(&format!("Could not find '{}'", req_value));
-
-
+    let value_index_start: usize = line
+        .find(req_value)
+        .expect(&format!("Could not find '{}'", req_value))
+        + 3;
+    let value_index_end = value_index_start + 22;
+    line[value_index_start..value_index_end]
+        .to_string()
+        .trim()
+        .parse::<f64>()
+        .unwrap()
 }
-
-
 
 fn date_time_range() -> (String, String) {
     let now = Utc::now();
     let yesterday = now - chrono::Duration::days(1);
-    (yesterday.date_naive().to_string(), now.date_naive().to_string(),)
+    (
+        yesterday.date_naive().to_string(),
+        now.date_naive().to_string(),
+    )
 }
 
-fn fetch_horizons_data(body_name: String, cache_choice: bool, times: &(String, String)) -> io::Result<(String)> {
+fn fetch_horizons_data(
+    body_name: String,
+    cache_choice: bool,
+    times: &(String, String),
+) -> io::Result<String> {
     let body_id = HORIZONS_IDS[body_name.as_str()];
 
     let horizons_data_file = format!("target/{}_data.txt", body_name);
 
-
     let data = if cache_choice {
-        println!("Using cached file");
         let data = fs::read_to_string(horizons_data_file).map_err(io::Error::other)?;
 
         data
     } else {
-
-
-
-
-
         let ureq_agent_config = Agent::config_builder()
             .timeout_global(Some(Duration::from_secs(5)))
             .build();
@@ -207,16 +201,17 @@ fn fetch_horizons_data(body_name: String, cache_choice: bool, times: &(String, S
 
         let parsed_data: serde_json::Value =
             serde_json::from_str(&json_output).map_err(io::Error::other)?;
-        let data_result = get_data_result(body_name, parsed_data)?;
+        let data_result = get_data_result(parsed_data)?;
         fs::write(horizons_data_file, &data_result).map_err(io::Error::other)?;
-
+        let time_text = format!("{}, {}", times.0, times.1);
+        fs::write("target/CacheInfo.txt", time_text).map_err(io::Error::other)?;
         data_result
     };
 
     Ok(data)
 }
 
-fn get_data_result(body: String, parsed_data: serde_json::Value) -> io::Result<String> {
+fn get_data_result(parsed_data: serde_json::Value) -> io::Result<String> {
     let data_result = if let Some(result_data) = parsed_data["result"].as_str() {
         result_data.to_string()
     } else {
@@ -243,5 +238,26 @@ mod tests {
     fn test_get_horizons_data() {
         let result = get_horizons_data();
         println!("{:?}", result);
+    }
+
+    #[test]
+    fn test_parse_data_component() {
+        let test_text =
+            "X = 1.446697200744756E+09 Y = 2.529576270507981E+09 Z =-9.363927391741514E+06";
+        let result = parse_data_component("X", &test_text);
+
+        assert_eq!(result, 1.446697200744756E+09);
+        let result = parse_data_component("Y", &test_text);
+
+        assert_eq!(result, 2.529576270507981E+09);
+
+        let test_text =
+            "VX=-1.153514724507517E+00 VY= 9.617609055336969E+00 VZ=-1.212755214223193E-01";
+        let result = parse_data_component("VX", &test_text);
+
+        assert_eq!(result, -1.153514724507517E+00);
+        let result = parse_data_component("VY", &test_text);
+
+        assert_eq!(result, 9.617609055336969E+00);
     }
 }

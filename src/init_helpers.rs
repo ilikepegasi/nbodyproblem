@@ -1,10 +1,10 @@
 use crate::constants::*;
 use crate::helpers::{Particle, calculate_orbital_speed, get_number_from_user};
+use crate::horizon::{HORIZONS_COLORS, get_horizons_data};
 use crate::init_helpers::CenterObjectValues::CenterObjectExists;
 use macroquad::color::*;
 use macroquad::math::DVec2;
 use macroquad::rand::gen_range;
-use std::alloc::System;
 use std::f64::consts::TAU;
 use std::string::ToString;
 
@@ -18,19 +18,18 @@ pub enum Variance {
 
 pub enum CenterObjectValues {
     CenterObjectExists(f64, DVec2),
-    NoCenterObject,
 }
 
 pub struct ConfigValues {
     pub scenario_name: String,
-    pub total_bodies_added: usize,
     pub important_bodies_added: usize,
-    pub sim_seconds_per_frame: f64,
     pub ticks_per_frame: usize,
     pub dt: f64,
     pub color_vel_range: (f64, f64),
     pub trail_length: usize,
     pub years_of_writing: f32,
+    pub window_factor: f64,
+    pub center_coords: DVec2,
 }
 
 pub fn initialize_from_scenario(
@@ -49,17 +48,21 @@ pub fn initialize_from_scenario(
     let mut sim_seconds_per_frame = 2e4;
     let mut ticks_per_frame = 1;
     let mut important_bodies_added = 0;
-
+    let mut window_factor = 1.0;
     let mut minimum_speed_color: f64 = 0.;
     let mut maximum_speed_color: f64 = 1.;
     let mut years_of_writing = 0.;
     let mut trail_length: usize = 0;
+    let mut center_coords = DVec2::ZERO;
 
     match scenario_name {
         "Spirograph" => {
-            let mut star: Particle = Particle {
+
+            center_coords = find_center_coords(SCALING_FACTOR_SPIRO);
+
+            let star: Particle = Particle {
                 mass: STAR_MASS,
-                position: DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]),
+                position: DVec2::new(center_coords[0], center_coords[1]),
                 velocity: DVec2::new(0., 0.),
                 radius: STAR_RADIUS,
                 color: YELLOW,
@@ -69,7 +72,7 @@ pub fn initialize_from_scenario(
             important_bodies_added += 1;
             total_bodies_added += 1;
             let center_object_values = CenterObjectExists(system[0].mass, system[0].position);
-            let mut earth_number = 0;
+            let mut earth_number: usize;
             loop {
                 earth_number =
                     get_number_from_user(&format!("How many Earths? (max {})", EARTH_NUMBER_MAX))
@@ -94,6 +97,7 @@ pub fn initialize_from_scenario(
                 Variance::NoVariance,
                 &center_object_values,
                 "Planet",
+                center_coords
             );
             sim_seconds_per_frame = SPIRO_SECONDS_PER_FRAME;
             years_of_writing = YEARS_OF_WRITING_SPIRO;
@@ -102,7 +106,7 @@ pub fn initialize_from_scenario(
             important_bodies_added += bodies_values_delta.1;
             println!("Spirograph scenario initialized with key {}", scenario);
             ticks_per_frame = TICKS_PER_FRAME_SPIRO;
-
+            window_factor = find_window_factor(SCALING_FACTOR_SPIRO);
             trail_length = OLD_FRAME_LIMIT_SPIRO;
             minimum_speed_color = calculate_orbital_speed(
                 &system[0].mass,
@@ -124,11 +128,13 @@ pub fn initialize_from_scenario(
             .log10();
         }
         "Figure 8" => {
+            center_coords = find_center_coords(SCALING_FACTOR_SPIRO);
             let bodies_values_delta = initialize_figure_8_scenario(
                 system,
                 &EARTH_ORBITAL_RADIUS,
                 &EARTH_MASS,
                 &EARTH_RADIUS,
+                center_coords
             );
             total_bodies_added += bodies_values_delta.0;
             important_bodies_added += bodies_values_delta.1;
@@ -139,6 +145,8 @@ pub fn initialize_from_scenario(
             for body in system.iter() {
                 println!("{}", body.position / EARTH_ORBITAL_RADIUS);
             }
+            window_factor = find_window_factor(SCALING_FACTOR_FIG8);
+
             trail_length = OLD_FRAME_LIMIT_FIG8;
             years_of_writing = YEARS_OF_WRITING_FIG8;
             sim_seconds_per_frame = FIGURE_8_SECONDS_PER_FRAME;
@@ -146,6 +154,21 @@ pub fn initialize_from_scenario(
             minimum_speed_color = system[0].velocity.length().log10();
             maximum_speed_color = system[2].velocity.length().log10();
         }
+        "Solar System" => {
+            center_coords = find_center_coords(SCALING_FACTOR_SOLAR_SYSTEM);
+            let bodies_values_delta = initialize_solar_system(system, center_coords);
+            total_bodies_added += bodies_values_delta.0;
+            important_bodies_added += bodies_values_delta.1;
+            window_factor = find_window_factor(SCALING_FACTOR_SOLAR_SYSTEM);
+            years_of_writing = YEARS_OF_WRITING_SPIRO;
+            ticks_per_frame = TICKS_PER_FRAME_SOLAR_SYSTEM;
+            sim_seconds_per_frame = SOLAR_SYS_SECONDS_PER_FRAME;
+            trail_length = OLD_FRAME_LIMIT_SOLAR_SYS;
+            minimum_speed_color = system[8].velocity.length().log10();
+            maximum_speed_color = system[1].velocity.length().log10();
+
+        }
+
         _ => {
             unreachable!("Initialization failed")
         }
@@ -154,14 +177,14 @@ pub fn initialize_from_scenario(
     let dt = sim_seconds_per_frame / ticks_per_frame as f64;
     let config_values: ConfigValues = ConfigValues {
         scenario_name: scenario_name.to_string(),
-        total_bodies_added,
         important_bodies_added,
-        sim_seconds_per_frame,
         ticks_per_frame,
         dt,
         color_vel_range: (minimum_speed_color, maximum_speed_color),
         trail_length,
         years_of_writing,
+        window_factor,
+        center_coords
     };
     config_values
 }
@@ -180,6 +203,7 @@ pub fn initialize_bodies_spiro(
     mass_variance: Variance,
     center_object_values: &CenterObjectValues,
     category_name: &str,
+    center_coords: DVec2,
 ) -> (usize, usize) /* This will return the amount of significant bodies added */ {
     let mut orbital_speed: f64;
     let mut orbital_radius_actual = *orbital_radius;
@@ -198,9 +222,9 @@ pub fn initialize_bodies_spiro(
         let angular_position: f64 =
             (TAU * i as f64 + initial_angular_offset) / *bodies_to_add as f64;
         let body_x_position: f64 =
-            CENTER_COORDS[0] + angular_position.cos() * orbital_radius_actual;
+            center_coords[0] + angular_position.cos() * orbital_radius_actual;
         let body_y_position: f64 =
-            CENTER_COORDS[1] + angular_position.sin() * orbital_radius_actual;
+            center_coords[1] + angular_position.sin() * orbital_radius_actual;
         let body_position: DVec2 = DVec2::new(body_x_position, body_y_position);
         if let CenterObjectExists(center_mass, center_position) = center_object_values {
             orbital_speed = orbital_speed_factor
@@ -214,7 +238,7 @@ pub fn initialize_bodies_spiro(
 
         let earth_velocity: DVec2 = DVec2::new(body_x_velocity, body_y_velocity);
 
-        let mut new_body: Particle = Particle {
+        let new_body: Particle = Particle {
             mass: mass_actual,
             position: body_position,
             velocity: earth_velocity,
@@ -236,6 +260,7 @@ pub fn initialize_figure_8_scenario(
     length_scale: &f64,
     body_masses: &f64,
     body_radii: &f64,
+    center_coords: DVec2,
 ) -> (usize, usize) {
     let canonical_figure_8_positions = [
         DVec2::new(-0.97000436, 0.24308753),
@@ -258,9 +283,9 @@ pub fn initialize_figure_8_scenario(
         real_velocities[i] =
             canonical_figure_8_velocities[i] * (G * body_masses / *length_scale).powf(0.5);
     }
-    let center = DVec2::new(CENTER_COORDS[0], CENTER_COORDS[1]);
+    let center = DVec2::new(center_coords[0], center_coords[1]);
     for i in 0..3 {
-        let mut new_body = Particle {
+        let new_body = Particle {
             mass: *body_masses,
             position: real_positions[i] + center,
             velocity: real_velocities[i],
@@ -274,7 +299,37 @@ pub fn initialize_figure_8_scenario(
     (3, 3)
 }
 
-pub fn initialize_solar_system(system: &mut Vec<Particle>) {}
-pub fn add_moon(system: &mut Vec<Particle>, home_body: &Particle) -> (usize, usize) {
-    (0, 0)
+pub fn initialize_solar_system(system: &mut Vec<Particle>, center_coords: DVec2) -> (usize, usize) {
+    let horizons_values = get_horizons_data();
+    for value in horizons_values.iter() {
+        let new_body = Particle {
+            mass: BODY_MASS_KG[&value.name],
+            radius: BODY_RADIUS_M[&value.name],
+            position: DVec2::new(km_to_meters(value.x)+center_coords.x, km_to_meters(value.y)+center_coords.y),
+            velocity: DVec2::new(km_per_s_to_meters_per_second(value.vx), km_per_s_to_meters_per_second(value.vy)),
+            color: HORIZONS_COLORS[&value.name],
+            name: value.name.clone(),
+        };
+        system.push(new_body);
+    }
+    (horizons_values.len(), horizons_values.len())
 }
+
+fn km_to_meters(distance_km: f64) -> f64 {
+    distance_km * 1000.
+}
+
+fn km_per_s_to_meters_per_second(velocity_km_p_s: f64) -> f64 {
+    velocity_km_p_s * 1000.
+}
+
+pub fn find_window_factor(scaling_factor: f64) -> f64 {
+    (SCREEN_SIZE as f64) / (scaling_factor * EARTH_ORBITAL_RADIUS)
+}
+pub fn find_center_coords(scaling_factor: f64) -> DVec2 {
+    DVec2::new(
+        scaling_factor * 0.5 * EARTH_ORBITAL_RADIUS,
+        scaling_factor * 0.5 * EARTH_ORBITAL_RADIUS,
+    )
+}
+

@@ -93,8 +93,8 @@ pub fn calculate_orbital_speed(
 }
 
 // This is used to correctly translate from coords in the simulation system into coords for graphics
-pub fn scale_window(distance: f64) -> f32 {
-    (distance * WINDOW_FACTOR) as f32
+pub fn scale_window(distance: f64, config_values: &ConfigValues) -> f32 {
+    (distance * config_values.window_factor) as f32
 }
 
 pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
@@ -203,11 +203,11 @@ pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::R
     Ok(())
 }
 
-pub fn draw_bodies(system: &Vec<Particle>) {
+pub fn draw_bodies(system: &Vec<Particle>, config_values: &ConfigValues) {
     for i in 0..system.len() {
         draw_circle(
-            scale_window(system[i].position[0]),
-            scale_window(system[i].position[1]),
+            scale_window(system[i].position[0], config_values),
+            scale_window(system[i].position[1], config_values),
             system[i].generate_visible_radius(),
             system[i].color,
         );
@@ -282,10 +282,10 @@ pub fn draw_trails(
                 let pos_2 = trail_values[i][(j + 1) % init_output.trail_length].0;
                 if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
                     draw_line(
-                        scale_window(pos_1[0]),
-                        scale_window(pos_1[1]),
-                        scale_window(pos_2[0]),
-                        scale_window(pos_2[1]),
+                        scale_window(pos_1[0], init_output),
+                        scale_window(pos_1[1], init_output),
+                        scale_window(pos_2[0], init_output),
+                        scale_window(pos_2[1], init_output),
                         TRAIL_RADIUS,
                         trail_values[i][j].1,
                     );
@@ -308,7 +308,7 @@ pub fn get_number_from_user(text: &str) -> f32 {
         }
     }
 }
-pub fn get_pos_int_from_user(text: &str) -> u32 {
+pub fn get_int_from_user(text: &str) -> u32 {
     loop {
         let mut user_input: String = String::new();
         println!("{}", text);

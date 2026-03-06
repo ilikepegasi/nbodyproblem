@@ -27,6 +27,7 @@ async fn main() {
     let scenario_key_list: Vec<ScenarioKey> = vec![
         ScenarioKey("Spirograph".to_string(), 0),
         ScenarioKey("Figure 8".to_string(), 1),
+        ScenarioKey("Solar System".to_string(), 2),
     ];
 
     let file_write = take_user_choice("Do you want to write to a file? ");
@@ -38,7 +39,7 @@ async fn main() {
     }
     let scenario = loop {
         let scenario: usize =
-            get_pos_int_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str())
+            get_int_from_user(format!("What scenario to use? {}", names_of_scenarios).as_str())
                 as usize;
 
         if scenario_key_list.iter().any(|k| k.1 == scenario) {
@@ -46,20 +47,19 @@ async fn main() {
         }
         println!("Invalid scenario");
     };
-    let mut total_bodies_added = 0;
-    let mut important_bodies_added = 0;
+    let circle_choice = false;
+
     let mut system: Vec<Particle> = Vec::new();
 
     let init_output = initialize_from_scenario(scenario, &mut system, &scenario_key_list);
-    total_bodies_added += init_output.total_bodies_added;
-    important_bodies_added += init_output.important_bodies_added;
+    let important_bodies_added = init_output.important_bodies_added;
+    println!("{}", important_bodies_added);
     let ticks_per_frame = init_output.ticks_per_frame;
     let sim_seconds_per_data_row: f64 =
         init_output.years_of_writing as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
     let dt = init_output.dt;
     let data_interval: usize = (sim_seconds_per_data_row / dt) as usize;
 
-    assert_eq!(total_bodies_added, system.len());
     // Generates a number of comets with varying masses, positions, and velocities
 
     let mut collision_counter: u32 = 0;
@@ -97,10 +97,10 @@ async fn main() {
         }
         rows_added += 1;
     }
-    draw_bodies(&system);
+    draw_bodies(&system, &init_output);
     let mut time_to_wait = get_number_from_user("How long to wait?");
     while time_to_wait > 0.0 {
-        draw_bodies(&system);
+        draw_bodies(&system, &init_output);
         next_frame().await;
         time_to_wait -= get_frame_time().min(0.1);
     }
@@ -158,31 +158,27 @@ async fn main() {
         }
 
         // Draws main bodies
-        draw_bodies(&system);
+        draw_bodies(&system, &init_output);
 
         // Helper circle around Earth's orbit
-        draw_poly_lines(
-            scale_window(CENTER_COORDS[0]),
-            scale_window(CENTER_COORDS[1]),
-            64,
-            scale_window(EARTH_ORBITAL_RADIUS),
-            0.,
-            1.,
-            RED,
-        );
+        if circle_choice {
+            draw_poly_lines(
+                scale_window(init_output.center_coords[0], &init_output),
+                scale_window(init_output.center_coords[1], &init_output),
+                64,
+                scale_window(EARTH_ORBITAL_RADIUS, &init_output),
+                0.,
+                1.,
+                RED,
+            );
+        }
 
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
         let mut info_on_screen = format!(
             "Years Passed: {:.5}/{:.2} | Total Physics Ticks: {}",
             &years_passed_in_sim, &init_output.years_of_writing, total_physics_ticks
         );
-        draw_text(
-            &info_on_screen,
-            10.0,
-            (SCREEN_SIZE - 80) as f32,
-            20.0,
-            WHITE,
-        );
+
         if file_write {
             info_on_screen.push_str(&format!(
                 " | Still Writing: {} (with {} rows)",
