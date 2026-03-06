@@ -2,6 +2,7 @@ use crate::helpers::take_user_choice;
 use chrono::prelude::*;
 use macroquad::color::Color;
 use macroquad::prelude::*;
+use crate::horizons_table::*;
 use phf;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -10,34 +11,7 @@ use std::path::Path;
 use std::time::Duration;
 use ureq::Agent;
 
-static HORIZONS_IDS: phf::Map<&str, u32> = phf::phf_map! {
-    "mercury"   => 199,
-    "venus"     => 299,
-    "earth"     => 399,
-    "mars"      => 499,
-    "jupiter"   => 599,
-    "saturn"    => 699,
-    "uranus"    => 799,
-    "neptune"   => 899,
-    //"luna"      => 301,
-    "sun"       => 10,
-};
-pub static HORIZONS_COLORS: phf::Map<&str, Color> = phf::phf_map! {
-    "mercury"   => GRAY,
-    "venus"     => Color::from_rgba(248, 226, 176, 200),
-    "earth"     => BLUE,
-    "mars"      => RED,
-    "jupiter"   => ORANGE,
-    "saturn"    => YELLOW,
-    "uranus"    => SKYBLUE,
-    "neptune"   => BLUE,
-    "luna"      => LIGHTGRAY,
-    "sun"       => YELLOW,
-};
 
-static MAJOR_BODIES: [&str; 9] = [
-    "mercury", "sun", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", //"luna",
-];
 
 /*
 $$SOE
@@ -62,8 +36,6 @@ pub struct OutputValues {
 }
 
 pub fn get_horizons_data() -> Vec<OutputValues> {
-
-
     let times = date_time_range();
     let mut body_values: Vec<OutputValues> = Vec::new();
 
@@ -79,22 +51,21 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
             println!("Generating new astrodata");
             false
         };
-
     }
 
-    let cache_choice: bool = if can_use_cached_file
-        {
-            if Path::new("target/cache/CacheInfo.txt").exists()
-                {
-                    println!("Cache Info: {}", fs::read_to_string("target/cache/CacheInfo.txt").unwrap());
-                }
-            !take_user_choice("Get new data? ")
+    let cache_choice: bool = if can_use_cached_file {
+        if Path::new("target/cache/CacheInfo.txt").exists() {
+            println!(
+                "Cache Info: {}",
+                fs::read_to_string("target/cache/CacheInfo.txt").unwrap()
+            );
         }
-    else {false};
-
+        !take_user_choice("Get new data? ")
+    } else {
+        false
+    };
 
     for body in MAJOR_BODIES.iter() {
-
         let horizons_data = fetch_horizons_data(body.to_string(), cache_choice, &times);
         match horizons_data {
             Ok(s) => {
@@ -106,10 +77,6 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
 
     body_values
 }
-
-
-
-
 
 fn parse_horizons_body_data(body_result: String, body_name: String) -> OutputValues {
     let soe = body_result.find("$$SOE").expect("Could not find '$$SOE'");

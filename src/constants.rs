@@ -4,37 +4,14 @@ use macroquad::math::DVec2;
 
 pub const STAR_MASS: f64 = 1.9891e30;
 pub const EARTH_MASS: f64 = 5.9722e24;
-pub static BODY_MASS_KG: phf::Map<&str, f64> = phf::phf_map! {
-    "mercury" => 3.301e+23,
-    "venus"   => 4.867e+24,
-    "earth"   => 5.972e+24,
-    "mars"    => 6.417e+23,
-    "jupiter" => 1.898e+27,
-    "saturn"  => 5.683e+26,
-    "uranus"  => 8.681e+25,
-    "neptune" => 1.024e+26,
-    "luna"    => 7.342e+22,
-    "sun"     => 1.989e+30,
-};
-// Body Radii in meters
-pub static BODY_RADIUS_M: phf::Map<&str, f64> = phf::phf_map! {
-    "mercury" => 2.439e+06,
-    "venus"   => 6.051e+06,
-    "earth"   => 6.371e+06,
-    "mars"    => 3.389e+06,
-    "jupiter" => 6.991e+07,
-    "saturn"  => 5.823e+07,
-    "uranus"  => 2.536e+07,
-    "neptune" => 2.462e+07,
-    "luna"    => 1.737e+06,
-    "sun"     => 6.957e+08,
-};
+
 pub const EARTH_RADIUS: f64 = 6.3781e6;
 pub const STAR_RADIUS: f64 = 6.957e8;
 pub const COMET_RADIUS: f64 = 7.4e3;
 
 // Orbital Radii
 pub const EARTH_ORBITAL_RADIUS: f64 = 1.496e11;
+pub const AU: f64 = 149597870700.;
 
 // Orbital Velocities in meters / second
 // pub const EARTH_ORBITAL_VELOCITY: f64 = 2.978e4;
@@ -63,7 +40,7 @@ pub const TICKS_PER_FRAME_FIG8: usize = 120;
 
 pub const TICKS_PER_FRAME_SPIRO: usize = 20;
 
-pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 90;
+pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 240;
 pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =
@@ -79,16 +56,18 @@ pub const LEFT_PAD: usize = 4;
 pub const COLUMNS_PER_OBJECT: usize = 2;
 
 // Graphics Parameters
-pub const SCREEN_SIZE: i32 = 1000;
-pub const SCALING_FACTOR_SPIRO: f64 = 2.5;
-pub const SCALING_FACTOR_FIG8: f64 = 2.5;
-pub const SCALING_FACTOR_SOLAR_SYSTEM: f64 = 65.0;
+pub const SCREEN_SIZE_PIXELS: u32 = 1000;
+
+pub const OFFSET_VELOCITY: f32 = 10.0;
+pub const ZOOM_VELOCITY: f64 = 0.9;
+pub const SCREEN_SIZE_SPIRO_METERS: f64 = 2.5 * AU;
+pub const SCREEN_SIZE_FIG8_METERS: f64 = 2.5 * AU;
+pub const SCREEN_SIZE_SOLAR_SYS_METERS: f64 = 65.0 * AU;
 pub const OLD_FRAME_LIMIT_SPIRO: usize = 2usize.pow(9);
 pub const OLD_FRAME_LIMIT_FIG8: usize = 2usize.pow(11);
 pub const OLD_FRAME_LIMIT_SOLAR_SYS: usize = 2usize.pow(11);
 
-
-pub const SMALL_RADIUS: f64 = EARTH_RADIUS/10.;
+pub const SMALL_RADIUS: f64 = EARTH_RADIUS / 10.;
 pub const MAX_TRAIL_LINE_LEN: f32 = EARTH_ORBITAL_RADIUS as f32;
 pub const MIN_RADIUS_MAX_COLOR: f64 = 0.2 * EARTH_ORBITAL_RADIUS;
 pub const MAX_RADIUS_MIN_COLOR: f64 = 1.0 * EARTH_ORBITAL_RADIUS;
@@ -101,4 +80,3 @@ pub const IMPORTANT_BODY_MASS_MIN: f64 = 0.2 * EARTH_MASS;
 pub const TRAIL_RADIUS: f32 = 1.;
 pub const MAX_RADIUS_PIXELS: f32 = 4.0;
 pub const MIN_RADIUS_PIXELS: f32 = 1.0;
-
