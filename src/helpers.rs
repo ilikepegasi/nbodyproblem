@@ -92,11 +92,6 @@ pub fn calculate_orbital_speed(
     speed
 }
 
-// This is used to correctly translate from coords in the simulation system into coords for graphics
-pub fn scale_window(distance: f64, config_values: &ConfigValues) -> f32 {
-    (distance * config_values.window_factor) as f32
-}
-
 pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
     let mut total_energy: f64 = 0.;
     for i in 0..system.len() {
@@ -180,7 +175,7 @@ pub fn add_physical_data(system: &Vec<Particle>, time: f64, wtr: &mut Writer<Fil
     wtr.flush().unwrap();
 }
 
-pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::Result<(())> {
+pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::Result<()> {
     let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
 
     newline[0] = String::from("Time");
@@ -201,17 +196,6 @@ pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::R
     wtr.write_record(newline)?;
     wtr.flush()?;
     Ok(())
-}
-
-pub fn draw_bodies(system: &Vec<Particle>, config_values: &ConfigValues) {
-    for i in 0..system.len() {
-        draw_circle(
-            scale_window(system[i].position[0], config_values),
-            scale_window(system[i].position[1], config_values),
-            system[i].generate_visible_radius(),
-            system[i].color,
-        );
-    }
 }
 
 pub fn take_user_choice(question: &str) -> bool {
@@ -251,50 +235,6 @@ pub fn velocity_to_color(velocity: DVec2, minimum_speed_log: f32, maximum_speed_
     color::hsl_to_rgb(hue, 0.4, 0.7)
 }
 
-pub fn draw_trails(
-    num_important_bodies: usize,
-    system: &Vec<Particle>,
-    trail_point_counter: &mut usize,
-    trail_values: &mut Vec<Vec<(DVec2, Color)>>,
-    log_min_speed: f32,
-    log_max_speed: f32,
-    init_output: &ConfigValues,
-) {
-    for i in 0..num_important_bodies {
-        trail_values[i][*trail_point_counter % init_output.trail_length].0 = system[i].position;
-        trail_values[i][*trail_point_counter % init_output.trail_length].1 =
-            velocity_to_color(system[i].velocity, log_min_speed, log_max_speed);
-    }
-    *trail_point_counter += 1;
-
-    let recent_point = *trail_point_counter % init_output.trail_length;
-    let gap_point = if recent_point == 0 {
-        init_output.trail_length - 1
-    } else {
-        recent_point - 1
-    };
-    // Draws the trail using old_positions
-
-    for i in 0..num_important_bodies {
-        for j in 0..init_output.trail_length.min(*trail_point_counter) {
-            if j != gap_point {
-                let pos_1 = trail_values[i][j].0;
-                let pos_2 = trail_values[i][(j + 1) % init_output.trail_length].0;
-                if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
-                    draw_line(
-                        scale_window(pos_1[0], init_output),
-                        scale_window(pos_1[1], init_output),
-                        scale_window(pos_2[0], init_output),
-                        scale_window(pos_2[1], init_output),
-                        TRAIL_RADIUS,
-                        trail_values[i][j].1,
-                    );
-                }
-            }
-        }
-    }
-}
-
 pub fn get_number_from_user(text: &str) -> f32 {
     loop {
         let mut user_input: String = String::new();
@@ -320,4 +260,20 @@ pub fn get_int_from_user(text: &str) -> u32 {
             Err(_) => println!("Invalid input. Please enter a valid number."),
         }
     }
+
+}
+
+
+pub fn accelerate_dt(dt: &mut f64, dt_origin: f64) {
+    let shift = is_key_down(KeyCode::LeftShift);
+    let zed = is_key_down(KeyCode::Z);
+
+    if shift {
+        *dt = 2.*dt_origin
+    } else if zed {
+        *dt = 0.5*dt_origin;
+    } else {
+        *dt = dt_origin;
+    }
+
 }

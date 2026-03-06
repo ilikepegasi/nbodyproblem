@@ -8,17 +8,18 @@ use constants::*;
 mod helpers;
 pub mod horizon;
 mod init_helpers;
+mod render;
+mod horizons_table;
 
 use helpers::*;
 use init_helpers::*;
-
-// TODO: Implement volume as a trait of Particle
+use render::*;
 
 fn gravity_conf() -> Conf {
     Conf {
         window_title: "Gravity_Sim".to_owned(),
-        window_height: SCREEN_SIZE,
-        window_width: SCREEN_SIZE,
+        window_height: SCREEN_SIZE_PIXELS as i32,
+        window_width: SCREEN_SIZE_PIXELS as i32,
         ..Default::default()
     }
 }
@@ -49,14 +50,26 @@ async fn main() {
     };
     let circle_choice = false;
 
+    let mut screen_values: ScreenValues = ScreenValues {
+        screen_size_pixels: 0,
+        screen_size_meters: 0.,
+        offset_pixels: Vec2::new(0., 0.),
+    };
+
     let mut system: Vec<Particle> = Vec::new();
 
-    let init_output = initialize_from_scenario(scenario, &mut system, &scenario_key_list);
+    let init_output = initialize_from_scenario(
+        scenario,
+        &mut system,
+        &scenario_key_list,
+        &mut screen_values,
+    );
     let important_bodies_added = init_output.important_bodies_added;
     let ticks_per_frame = init_output.ticks_per_frame;
     let sim_seconds_per_data_row: f64 =
         init_output.years_of_writing as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
-    let dt = init_output.dt;
+    let mut dt = init_output.dt;
+    let dt_origin = dt;
     let data_interval: usize = (sim_seconds_per_data_row / dt) as usize;
 
     // Generates a number of comets with varying masses, positions, and velocities
@@ -96,10 +109,10 @@ async fn main() {
         }
         rows_added += 1;
     }
-    draw_bodies(&system, &init_output);
+    draw_bodies(&system, &screen_values);
     let mut time_to_wait = get_number_from_user("How long to wait?");
     while time_to_wait > 0.0 {
-        draw_bodies(&system, &init_output);
+        draw_bodies(&system, &screen_values);
         next_frame().await;
         time_to_wait -= get_frame_time().min(0.1);
     }
@@ -153,23 +166,27 @@ async fn main() {
                 init_output.color_vel_range.0 as f32,
                 init_output.color_vel_range.1 as f32,
                 &init_output,
+                &screen_values,
             );
         }
 
         // Draws main bodies
-        draw_bodies(&system, &init_output);
+        draw_bodies(&system, &screen_values);
 
         // Helper circle around Earth's orbit
         if circle_choice {
+            /*
             draw_poly_lines(
-                scale_window(init_output.center_coords[0], &init_output),
-                scale_window(init_output.center_coords[1], &init_output),
+                scale_window(center_coords[0], &init_output),
+                scale_window(center_coords[1], &init_output),
                 64,
                 scale_window(EARTH_ORBITAL_RADIUS, &init_output),
                 0.,
                 1.,
                 RED,
             );
+
+             */
         }
 
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
@@ -192,11 +209,13 @@ async fn main() {
         draw_text(
             &info_on_screen,
             10.0,
-            (SCREEN_SIZE - 80) as f32,
+            (SCREEN_SIZE_PIXELS - 80) as f32,
             20.0,
             WHITE,
         );
         draw_fps();
+        accelerate_dt(&mut dt, dt_origin);
+        screen_values.update();
         next_frame().await
     }
 }
