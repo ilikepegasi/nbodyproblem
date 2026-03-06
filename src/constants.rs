@@ -57,13 +57,13 @@ pub const COLLISION_MIN_MASS: f64 = 1.0;
 pub const DEFAULT_ANGULAR_OFFSET: f64 = 0.;
 pub const FIGURE_8_SECONDS_PER_FRAME: f64 = 8e6;
 pub const SPIRO_SECONDS_PER_FRAME: f64 = 2e4;
-pub const SOLAR_SYS_SECONDS_PER_FRAME: f64 = 4e4;
+pub const SOLAR_SYS_SECONDS_PER_FRAME: f64 = 2e5;
 
 pub const TICKS_PER_FRAME_FIG8: usize = 120;
 
 pub const TICKS_PER_FRAME_SPIRO: usize = 20;
 
-pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 30;
+pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 90;
 pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =

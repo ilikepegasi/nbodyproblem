@@ -164,8 +164,9 @@ pub fn initialize_from_scenario(
             ticks_per_frame = TICKS_PER_FRAME_SOLAR_SYSTEM;
             sim_seconds_per_frame = SOLAR_SYS_SECONDS_PER_FRAME;
             trail_length = OLD_FRAME_LIMIT_SOLAR_SYS;
+
             minimum_speed_color = system[8].velocity.length().log10();
-            maximum_speed_color = system[1].velocity.length().log10();
+            maximum_speed_color = system[0].velocity.length().log10();
 
         }
 

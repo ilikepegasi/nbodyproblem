@@ -70,7 +70,7 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
     let mut horizon_data_files_names = Vec::new();
     let mut can_use_cached_file = false;
     for body in MAJOR_BODIES.iter() {
-        let horizons_data_file = format!("target/{}_data.txt", body);
+        let horizons_data_file = format!("target/cache/{}_data.txt", body);
         horizon_data_files_names.push(horizons_data_file.clone());
 
         can_use_cached_file = if Path::new(horizons_data_file.as_str()).exists() {
@@ -84,9 +84,9 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
 
     let cache_choice: bool = if can_use_cached_file
         {
-            if Path::new("target/CacheInfo.txt").exists()
+            if Path::new("target/cache/CacheInfo.txt").exists()
                 {
-                    println!("Cache Info: {}", fs::read_to_string("target/CacheInfo.txt").unwrap());
+                    println!("Cache Info: {}", fs::read_to_string("target/cache/CacheInfo.txt").unwrap());
                 }
             !take_user_choice("Get new data? ")
         }
@@ -174,7 +174,7 @@ fn fetch_horizons_data(
 ) -> io::Result<String> {
     let body_id = HORIZONS_IDS[body_name.as_str()];
 
-    let horizons_data_file = format!("target/{}_data.txt", body_name);
+    let horizons_data_file = format!("target/cache/{}_data.txt", body_name);
 
     let data = if cache_choice {
         let data = fs::read_to_string(horizons_data_file).map_err(io::Error::other)?;
@@ -204,7 +204,7 @@ fn fetch_horizons_data(
         let data_result = get_data_result(parsed_data)?;
         fs::write(horizons_data_file, &data_result).map_err(io::Error::other)?;
         let time_text = format!("{}, {}", times.0, times.1);
-        fs::write("target/CacheInfo.txt", time_text).map_err(io::Error::other)?;
+        fs::write("target/cache/CacheInfo.txt", time_text).map_err(io::Error::other)?;
         data_result
     };
 

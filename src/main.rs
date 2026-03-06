@@ -53,7 +53,6 @@ async fn main() {
 
     let init_output = initialize_from_scenario(scenario, &mut system, &scenario_key_list);
     let important_bodies_added = init_output.important_bodies_added;
-    println!("{}", important_bodies_added);
     let ticks_per_frame = init_output.ticks_per_frame;
     let sim_seconds_per_data_row: f64 =
         init_output.years_of_writing as f64 * SECONDS_IN_YEAR / ROW_LIMIT as f64;
