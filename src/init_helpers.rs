@@ -1,6 +1,6 @@
 use crate::constants::*;
 use crate::helpers::{Particle, calculate_orbital_speed, get_number_from_user};
-use crate::horizon::{get_horizons_data};
+use crate::horizon::get_horizons_data;
 use crate::horizons_table::*;
 use crate::init_helpers::CenterObjectValues::CenterObjectExists;
 use crate::render::ScreenValues;
@@ -53,8 +53,8 @@ pub fn initialize_from_scenario(
     let mut maximum_speed_color: f64 = 1.;
     let mut years_of_writing = 0.;
     let mut trail_length: usize = 0;
-    let screen_size_meters: u32 = 0;
-    let offset_pixels = Vec2::ZERO;
+    let mut screen_size_meters: u32 = 0;
+    let mut offset_pixels = Vec2::ZERO;
 
     match scenario_name {
         "Spirograph" => {
@@ -124,7 +124,6 @@ pub fn initialize_from_scenario(
                 ),
             )
             .log10();
-
         }
         "Figure 8" => {
             let bodies_values_delta = initialize_figure_8_scenario(
@@ -150,7 +149,6 @@ pub fn initialize_from_scenario(
             minimum_speed_color = system[0].velocity.length().log10();
             maximum_speed_color = system[2].velocity.length().log10();
             screen_values.initialize(SCREEN_SIZE_PIXELS, SCREEN_SIZE_FIG8_METERS);
-
         }
         "Solar System" => {
             let bodies_values_delta = initialize_solar_system(system);
@@ -164,7 +162,6 @@ pub fn initialize_from_scenario(
             minimum_speed_color = system[8].velocity.length().log10();
             maximum_speed_color = system[0].velocity.length().log10();
             screen_values.initialize(SCREEN_SIZE_PIXELS, SCREEN_SIZE_SOLAR_SYS_METERS);
-
         }
 
         _ => {
@@ -217,10 +214,8 @@ pub fn initialize_bodies_spiro(
     for i in 0..*bodies_to_add {
         let angular_position: f64 =
             (TAU * i as f64 + initial_angular_offset) / *bodies_to_add as f64;
-        let body_x_position: f64 =
-            angular_position.cos() * orbital_radius_actual;
-        let body_y_position: f64 =
-            angular_position.sin() * orbital_radius_actual;
+        let body_x_position: f64 = angular_position.cos() * orbital_radius_actual;
+        let body_y_position: f64 = angular_position.sin() * orbital_radius_actual;
         let body_position: DVec2 = DVec2::new(body_x_position, body_y_position);
         if let CenterObjectExists(center_mass, center_position) = center_object_values {
             orbital_speed = orbital_speed_factor
@@ -299,10 +294,7 @@ pub fn initialize_solar_system(system: &mut Vec<Particle>) -> (usize, usize) {
         let new_body = Particle {
             mass: BODY_MASS_KG[&value.name],
             radius: BODY_RADIUS_M[&value.name],
-            position: DVec2::new(
-                km_to_meters(value.x),
-                km_to_meters(value.y),
-            ),
+            position: DVec2::new(km_to_meters(value.x), km_to_meters(value.y)),
             velocity: DVec2::new(
                 km_per_s_to_meters_per_second(value.vx),
                 km_per_s_to_meters_per_second(value.vy),
@@ -322,5 +314,3 @@ fn km_to_meters(distance_km: f64) -> f64 {
 fn km_per_s_to_meters_per_second(velocity_km_p_s: f64) -> f64 {
     velocity_km_p_s * 1000.
 }
-
-

@@ -260,20 +260,17 @@ pub fn get_int_from_user(text: &str) -> u32 {
             Err(_) => println!("Invalid input. Please enter a valid number."),
         }
     }
-
 }
-
 
 pub fn accelerate_dt(dt: &mut f64, dt_origin: f64) {
     let shift = is_key_down(KeyCode::LeftShift);
     let zed = is_key_down(KeyCode::Z);
 
     if shift {
-        *dt = 2.*dt_origin
+        *dt = 2. * dt_origin
     } else if zed {
-        *dt = 0.5*dt_origin;
+        *dt = 0.5 * dt_origin;
     } else {
         *dt = dt_origin;
     }
-
 }

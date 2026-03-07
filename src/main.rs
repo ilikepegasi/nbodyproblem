@@ -7,9 +7,9 @@ use constants::*;
 
 mod helpers;
 pub mod horizon;
+mod horizons_table;
 mod init_helpers;
 mod render;
-mod horizons_table;
 
 use helpers::*;
 use init_helpers::*;
@@ -53,7 +53,7 @@ async fn main() {
     let mut screen_values: ScreenValues = ScreenValues {
         screen_size_pixels: 0,
         screen_size_meters: 0.,
-        offset_pixels: Vec2::new(0., 0.),
+        center_meters: DVec2::new(0., 0.),
     };
 
     let mut system: Vec<Particle> = Vec::new();
@@ -116,45 +116,47 @@ async fn main() {
         next_frame().await;
         time_to_wait -= get_frame_time().min(0.1);
     }
-
+    let mut paused = false;
     loop {
         clear_background(BLACK);
+        if is_key_released(KeyCode::Space) {paused = !paused;}
+        if !paused {
+            for _i in 0..ticks_per_frame {
+                total_physics_ticks += 1;
+                /* Parallel calculation of all the forces acting on the bodies using the
+                calculate_g_force method */
+                let forces: Vec<DVec2> = (0..system.len())
+                    .into_par_iter()
+                    .map(|i| system[i].calculate_g_force(&system, i))
+                    .collect();
 
-        for _i in 0..ticks_per_frame {
-            total_physics_ticks += 1;
-            /* Parallel calculation of all the forces acting on the bodies using the
-            calculate_g_force method */
-            let forces: Vec<DVec2> = (0..system.len())
-                .into_par_iter()
-                .map(|i| system[i].calculate_g_force(&system, i))
-                .collect();
-
-            // Applies forces to the system
-            for i in 0..system.len() {
-                system[i].kick(forces[i], dt);
-            }
-            for i in 0..system.len() {
-                system[i].drift(dt);
-            }
-            let forces: Vec<DVec2> = (0..system.len())
-                .into_par_iter()
-                .map(|i| system[i].calculate_g_force(&system, i))
-                .collect();
-            for i in 0..system.len() {
-                system[i].kick(forces[i], dt);
-            }
-            if collisions {
-                collision_counter += collision_engine(&mut system)
-            };
-            if file_write {
-                if let Some(ref mut w) = wtr {
-                    if rows_added < ROW_LIMIT && total_physics_ticks % data_interval == 0 {
-                        add_physical_data(&system, seconds_passed_in_sim, w, rows_added);
-                        rows_added += 1;
+                // Applies forces to the system
+                for i in 0..system.len() {
+                    system[i].kick(forces[i], dt);
+                }
+                for i in 0..system.len() {
+                    system[i].drift(dt);
+                }
+                let forces: Vec<DVec2> = (0..system.len())
+                    .into_par_iter()
+                    .map(|i| system[i].calculate_g_force(&system, i))
+                    .collect();
+                for i in 0..system.len() {
+                    system[i].kick(forces[i], dt);
+                }
+                if collisions {
+                    collision_counter += collision_engine(&mut system)
+                };
+                if file_write {
+                    if let Some(ref mut w) = wtr {
+                        if rows_added < ROW_LIMIT && total_physics_ticks % data_interval == 0 {
+                            add_physical_data(&system, seconds_passed_in_sim, w, rows_added);
+                            rows_added += 1;
+                        }
                     }
                 }
+                seconds_passed_in_sim += dt;
             }
-            seconds_passed_in_sim += dt;
         }
 
         if trails {
@@ -213,6 +215,7 @@ async fn main() {
             20.0,
             WHITE,
         );
+        cross(&screen_values);
         draw_fps();
         accelerate_dt(&mut dt, dt_origin);
         screen_values.update();

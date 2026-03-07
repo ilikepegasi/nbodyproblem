@@ -1,8 +1,8 @@
 use crate::helpers::take_user_choice;
+use crate::horizons_table::*;
 use chrono::prelude::*;
 use macroquad::color::Color;
 use macroquad::prelude::*;
-use crate::horizons_table::*;
 use phf;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -10,8 +10,6 @@ use std::io;
 use std::path::Path;
 use std::time::Duration;
 use ureq::Agent;
-
-
 
 /*
 $$SOE

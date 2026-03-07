@@ -34,13 +34,13 @@ pub const COLLISION_MIN_MASS: f64 = 1.0;
 pub const DEFAULT_ANGULAR_OFFSET: f64 = 0.;
 pub const FIGURE_8_SECONDS_PER_FRAME: f64 = 8e6;
 pub const SPIRO_SECONDS_PER_FRAME: f64 = 2e4;
-pub const SOLAR_SYS_SECONDS_PER_FRAME: f64 = 2e5;
+pub const SOLAR_SYS_SECONDS_PER_FRAME: f64 = 2e4;
 
-pub const TICKS_PER_FRAME_FIG8: usize = 120;
+pub const TICKS_PER_FRAME_FIG8: usize = 120; //divide by zero error if 1 IDK why
 
-pub const TICKS_PER_FRAME_SPIRO: usize = 20;
+pub const TICKS_PER_FRAME_SPIRO: usize = 20; //divide by zero error if 1 IDK why
 
-pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 240;
+pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 360; //divide by zero error if 1 IDK why
 pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =
@@ -58,8 +58,8 @@ pub const COLUMNS_PER_OBJECT: usize = 2;
 // Graphics Parameters
 pub const SCREEN_SIZE_PIXELS: u32 = 1000;
 
-pub const OFFSET_VELOCITY: f32 = 10.0;
-pub const ZOOM_VELOCITY: f64 = 0.9;
+pub const OFFSET_VELOCITY: f32 = 6.0;
+pub const ZOOM_VELOCITY: f64 = 0.95;
 pub const SCREEN_SIZE_SPIRO_METERS: f64 = 2.5 * AU;
 pub const SCREEN_SIZE_FIG8_METERS: f64 = 2.5 * AU;
 pub const SCREEN_SIZE_SOLAR_SYS_METERS: f64 = 65.0 * AU;

@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::helpers::{Particle, velocity_to_color};
 use crate::init_helpers::ConfigValues;
-use macroquad::color::Color;
+use macroquad::color::{Color, RED};
 use macroquad::input::is_key_down;
 use macroquad::math::{DVec2, Vec2};
 use macroquad::prelude::{KeyCode, draw_circle, draw_line};
@@ -9,26 +9,25 @@ use macroquad::prelude::{KeyCode, draw_circle, draw_line};
 pub struct ScreenValues {
     pub screen_size_pixels: u32,
     pub screen_size_meters: f64,
-    pub offset_pixels: Vec2,
+    pub center_meters: DVec2,
 }
 
 impl ScreenValues {
     pub fn physical_pos_to_screen_coords(&self, position: DVec2) -> Vec2 {
-        let position_in_pixels: Vec2 = Vec2::new(
-            meters_to_pixel(position.x, self),
-            meters_to_pixel(position.y, self),
-        );
-        position_in_pixels + Vec2::new(
-            self.screen_size_pixels as f32 / 2.0,
-            self.screen_size_pixels as f32 / 2.0,
-        ) - self.offset_pixels
+        let relative_position = position - self.center_meters;
+        let centered_pixel = self.screen_size_pixels / 2;
+        centered_pixel as f32
+            + Vec2::new(
+                meters_to_pixel(relative_position.x, self),
+                meters_to_pixel(relative_position.y, self),
+            )
     }
 
     pub fn initialize(&mut self, screen_size_pixels: u32, screen_size_meters: f64) {
         self.screen_size_pixels = screen_size_pixels;
         self.screen_size_meters = screen_size_meters;
 
-        self.offset_pixels = Vec2::ZERO;
+        self.center_meters = DVec2::ZERO;
     }
     pub fn update(&mut self) {
         let down = is_key_down(KeyCode::S);
@@ -40,31 +39,30 @@ impl ScreenValues {
         let reset = is_key_down(KeyCode::R);
         if reset {
             self.screen_size_meters = AU;
-            self.offset_pixels = Vec2::ZERO;
+            self.center_meters = DVec2::ZERO;
         } else {
-            let direction = OFFSET_VELOCITY
-                * Vec2::new(
-                right as u8 as f32 - left as u8 as f32,
-                -(up as u8 as f32) + down as u8 as f32,
-            );
+            let meters_per_pixel = self.screen_size_meters / self.screen_size_pixels as f64;
+            let direction = OFFSET_VELOCITY as f64
+                * meters_per_pixel
+                * DVec2::new(
+                    right as u8 as f64 - left as u8 as f64,
+                    -(up as u8 as f64) + down as u8 as f64,
+                );
 
             if zoom_in && !zoom_out {
-                self.screen_size_meters *= ZOOM_VELOCITY
+                self.screen_size_meters *= ZOOM_VELOCITY;
             } else if zoom_out && !zoom_in {
-                self.screen_size_meters /= ZOOM_VELOCITY
+                self.screen_size_meters /= ZOOM_VELOCITY;
             }
 
-            self.offset_pixels += direction;
+            self.center_meters += direction;
         }
     }
 }
 
 pub fn meters_to_pixel(distance: f64, screen_values: &ScreenValues) -> f32 {
-
     (distance / screen_values.screen_size_meters) as f32 * screen_values.screen_size_pixels as f32
-
 }
-
 
 pub fn draw_bodies(system: &Vec<Particle>, screen_values: &ScreenValues) {
     for i in 0..system.len() {
@@ -126,4 +124,24 @@ pub fn draw_trails(
             }
         }
     }
+}
+
+pub fn cross(screen_values: &ScreenValues) {
+    draw_line(
+        (screen_values.screen_size_pixels / 2) as f32,
+        (screen_values.screen_size_pixels / 2) as f32 + 10.,
+        (screen_values.screen_size_pixels / 2) as f32,
+        (screen_values.screen_size_pixels / 2) as f32 - 10.,
+        1.,
+        Color::from_rgba(255, 0, 0, 120),
+    );
+
+    draw_line(
+        (screen_values.screen_size_pixels / 2) as f32 - 10.,
+        (screen_values.screen_size_pixels / 2) as f32,
+        (screen_values.screen_size_pixels / 2) as f32 + 10.,
+        (screen_values.screen_size_pixels / 2) as f32,
+        1.,
+        Color::from_rgba(255, 0, 0, 120),
+    );
 }
