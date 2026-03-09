@@ -72,6 +72,10 @@ impl Particle {
         0.5 * self.velocity.length().powf(2.) * self.mass
     }
 
+    pub fn calculate_momentum(&self) -> DVec2 {
+        self.velocity * self.mass
+    }
+
     pub fn generate_visible_radius(&self) -> f32 {
         let log_min = SMALL_RADIUS.log10() as f32;
         let log_max = STAR_RADIUS.log10() as f32;
@@ -100,6 +104,16 @@ pub fn find_system_kinetic_energy(system: &Vec<Particle>) -> f64 {
         }
     }
     total_energy
+}
+
+pub fn find_system_momentum(system: &Vec<Particle>) -> DVec2 {
+    let mut total_momentum: DVec2 = DVec2::ZERO;
+    for i in 0..system.len() {
+        if system[i].mass != 0.0 {
+            total_momentum += system[i].calculate_momentum();
+        }
+    }
+    total_momentum
 }
 
 pub fn collision_engine(system: &mut Vec<Particle>) -> u32 {
@@ -154,21 +168,28 @@ pub fn add_physical_data(system: &Vec<Particle>, time: f64, wtr: &mut Writer<Fil
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] = system[i].position[1].to_string();
     }
 
-    if rows % ENERGY_INTERVAL == 0 {
+    if rows % PHYSICAL_DATA_INTERVAL == 0 {
         let total_kinetic_energy = find_system_kinetic_energy(&system);
+        let total_momentum = find_system_momentum(&system);
+
         let gravitational_energies: Vec<f64> = (0..system.len())
             .into_par_iter()
             .map(|i| system[i].find_potential_gravitational_energy(&system, i))
             .collect();
         let total_gravitational_energy: f64 = gravitational_energies.iter().sum();
         let total_energy: f64 = total_kinetic_energy + total_gravitational_energy;
+
         newline[1] = total_kinetic_energy.to_string();
         newline[2] = total_gravitational_energy.to_string();
         newline[3] = total_energy.to_string();
+        newline[4] = total_momentum.x.to_string();
+        newline[5] = total_momentum.y.to_string();
     } else {
         newline[1] = String::from("NaN");
         newline[2] = String::from("NaN");
         newline[3] = String::from("NaN");
+        newline[4] = String::from("NaN");
+        newline[5] = String::from("NaN");
     }
 
     wtr.write_record(newline).unwrap();
@@ -178,23 +199,38 @@ pub fn add_physical_data(system: &Vec<Particle>, time: f64, wtr: &mut Writer<Fil
 pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::Result<()> {
     let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
 
+    for i in 0..system.len() {
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!("{}", system[i].name));
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] =
+            String::from(format!("{}", system[i].name));
+    }
+    wtr.write_record(newline)?;
+    wtr.flush()?;
+    let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
+    newline[0] = String::from("Mass ->");
+
+    for i in 0..system.len() {
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!("{:2e}", system[i].mass));
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] =
+            String::from(format!("{:2e}", system[i].mass));
+    }
+    wtr.write_record(newline)?;
+    wtr.flush()?;
+    let mut newline = vec!["".to_string(); system.len() * COLUMNS_PER_OBJECT + LEFT_PAD];
     newline[0] = String::from("Time");
     newline[1] = String::from("Kinetic Energy");
     newline[2] = String::from("Gravitational Potential Energy");
     newline[3] = String::from("Total Energy");
+    newline[4] = String::from("X Momentum");
+    newline[4] = String::from("Y Momentum");
 
     for i in 0..system.len() {
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from(format!(
-            "Position in X of {} with mass {:2e}",
-            system[i].name, system[i].mass
-        ));
-        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] = String::from(format!(
-            "Position in Y of {} with mass {:2e}",
-            system[i].name, system[i].mass
-        ));
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from("X".to_string());
+        newline[COLUMNS_PER_OBJECT * i + LEFT_PAD + 1] = String::from("Y".to_string());
     }
     wtr.write_record(newline)?;
     wtr.flush()?;
+
     Ok(())
 }
 

@@ -54,6 +54,7 @@ async fn main() {
         screen_size_pixels: 0,
         screen_size_meters: 0.,
         center_meters: DVec2::new(0., 0.),
+        mode: Mode::Free,
     };
 
     let mut system: Vec<Particle> = Vec::new();
@@ -119,7 +120,19 @@ async fn main() {
     let mut paused = false;
     loop {
         clear_background(BLACK);
-        if is_key_released(KeyCode::Space) {paused = !paused;}
+        if is_key_released(KeyCode::Space) {
+            paused = !paused;
+        }
+
+        render_call(
+            trails,
+            &mut screen_values,
+            &mut system,
+            &init_output,
+            important_bodies_added,
+            &mut trail_point_counter,
+            &mut trail_values,
+        );
         if !paused {
             for _i in 0..ticks_per_frame {
                 total_physics_ticks += 1;
@@ -159,37 +172,7 @@ async fn main() {
             }
         }
 
-        if trails {
-            draw_trails(
-                important_bodies_added,
-                &system,
-                &mut trail_point_counter,
-                &mut trail_values,
-                init_output.color_vel_range.0 as f32,
-                init_output.color_vel_range.1 as f32,
-                &init_output,
-                &screen_values,
-            );
-        }
 
-        // Draws main bodies
-        draw_bodies(&system, &screen_values);
-
-        // Helper circle around Earth's orbit
-        if circle_choice {
-            /*
-            draw_poly_lines(
-                scale_window(center_coords[0], &init_output),
-                scale_window(center_coords[1], &init_output),
-                64,
-                scale_window(EARTH_ORBITAL_RADIUS, &init_output),
-                0.,
-                1.,
-                RED,
-            );
-
-             */
-        }
 
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
         let mut info_on_screen = format!(
@@ -215,10 +198,8 @@ async fn main() {
             20.0,
             WHITE,
         );
-        cross(&screen_values);
         draw_fps();
         accelerate_dt(&mut dt, dt_origin);
-        screen_values.update();
         next_frame().await
     }
 }

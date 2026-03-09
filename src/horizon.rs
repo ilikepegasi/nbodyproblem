@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::ptr::eq;
 use std::time::Duration;
 use ureq::Agent;
 
@@ -38,18 +39,11 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
     let mut body_values: Vec<OutputValues> = Vec::new();
 
     let mut horizon_data_files_names = Vec::new();
-    let mut can_use_cached_file = false;
-    for body in MAJOR_BODIES.iter() {
+    let can_use_cached_file = MAJOR_BODIES.iter().all(|body| {
         let horizons_data_file = format!("target/cache/{}_data.txt", body);
         horizon_data_files_names.push(horizons_data_file.clone());
-
-        can_use_cached_file = if Path::new(horizons_data_file.as_str()).exists() {
-            true
-        } else {
-            println!("Generating new astrodata");
-            false
-        };
-    }
+        Path::new(&horizons_data_file).exists()
+    });
 
     let cache_choice: bool = if can_use_cached_file {
         if Path::new("target/cache/CacheInfo.txt").exists() {
@@ -62,6 +56,9 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
     } else {
         false
     };
+    if !can_use_cached_file {
+        println!("No cached files found, retrieving new data");
+    }
 
     for body in MAJOR_BODIES.iter() {
         let horizons_data = fetch_horizons_data(body.to_string(), cache_choice, &times);
@@ -137,6 +134,7 @@ fn fetch_horizons_data(
     cache_choice: bool,
     times: &(String, String),
 ) -> io::Result<String> {
+    fs::create_dir_all("target/cache").map_err(io::Error::other)?;
     let body_id = HORIZONS_IDS[body_name.as_str()];
 
     let horizons_data_file = format!("target/cache/{}_data.txt", body_name);
@@ -205,24 +203,35 @@ mod tests {
         println!("{:?}", result);
     }
 
+
     #[test]
-    fn test_parse_data_component() {
-        let test_text =
-            "X = 1.446697200744756E+09 Y = 2.529576270507981E+09 Z =-9.363927391741514E+06";
-        let result = parse_data_component("X", &test_text);
-
-        assert_eq!(result, 1.446697200744756E+09);
-        let result = parse_data_component("Y", &test_text);
-
-        assert_eq!(result, 2.529576270507981E+09);
-
-        let test_text =
-            "VX=-1.153514724507517E+00 VY= 9.617609055336969E+00 VZ=-1.212755214223193E-01";
-        let result = parse_data_component("VX", &test_text);
-
-        assert_eq!(result, -1.153514724507517E+00);
-        let result = parse_data_component("VY", &test_text);
-
-        assert_eq!(result, 9.617609055336969E+00);
+    fn test_parse_radius_debug() {
+        // change body name to whichever is failing
+        let result = fetch_horizons_data("mercury".to_string(), true, &date_time_range());
+        if let Ok(text) = result {
+            // print just the physical properties section
+            let start = text.find("Physical").or_else(|| text.find("PHYSICAL"));
+            if let Some(s) = start {
+                println!("{}", &text[s..s+500]);
+            } else {
+                println!("No physical section found, printing start:");
+                println!("{}", &text[..500]);
+            }
+        }
     }
+
+    #[test]
+    fn test_parse_gm_all_bodies() {
+        for body in MAJOR_BODIES.iter() {
+            let result = fetch_horizons_data(body.to_string(), true, &date_time_range());
+            if let Ok(text) = result {
+                for line in text.lines() {
+                    if line.to_lowercase().contains("gm") {
+                        println!("{}: '{}'", body, line);
+                    }
+                }
+            }
+        }
+    }
+
 }

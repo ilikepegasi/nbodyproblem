@@ -1,17 +1,28 @@
 use crate::constants::*;
 use crate::helpers::{Particle, velocity_to_color};
 use crate::init_helpers::ConfigValues;
+use crate::render::LockedTarget::Planet;
 use macroquad::color::{Color, RED};
-use macroquad::input::is_key_down;
+use macroquad::input::{is_key_down, is_key_released};
 use macroquad::math::{DVec2, Vec2};
 use macroquad::prelude::{KeyCode, draw_circle, draw_line};
+use std::any::Any;
+use std::string::ToString;
 
+pub enum Mode {
+    Free,
+    Locked(LockedTarget),
+}
+
+pub enum LockedTarget {
+    Planet(usize),
+}
 pub struct ScreenValues {
     pub screen_size_pixels: u32,
     pub screen_size_meters: f64,
     pub center_meters: DVec2,
+    pub mode: Mode,
 }
-
 impl ScreenValues {
     pub fn physical_pos_to_screen_coords(&self, position: DVec2) -> Vec2 {
         let relative_position = position - self.center_meters;
@@ -28,19 +39,20 @@ impl ScreenValues {
         self.screen_size_meters = screen_size_meters;
 
         self.center_meters = DVec2::ZERO;
+        self.mode = Mode::Free;
     }
-    pub fn update(&mut self) {
+    pub fn update_free(&mut self) {
         let down = is_key_down(KeyCode::S);
         let up = is_key_down(KeyCode::W);
         let left = is_key_down(KeyCode::A);
         let right = is_key_down(KeyCode::D);
-        let zoom_in = is_key_down(KeyCode::Q);
-        let zoom_out = is_key_down(KeyCode::E);
         let reset = is_key_down(KeyCode::R);
         if reset {
             self.screen_size_meters = AU;
             self.center_meters = DVec2::ZERO;
         } else {
+            self.zoom();
+
             let meters_per_pixel = self.screen_size_meters / self.screen_size_pixels as f64;
             let direction = OFFSET_VELOCITY as f64
                 * meters_per_pixel
@@ -49,13 +61,29 @@ impl ScreenValues {
                     -(up as u8 as f64) + down as u8 as f64,
                 );
 
-            if zoom_in && !zoom_out {
-                self.screen_size_meters *= ZOOM_VELOCITY;
-            } else if zoom_out && !zoom_in {
-                self.screen_size_meters /= ZOOM_VELOCITY;
-            }
-
             self.center_meters += direction;
+        }
+    }
+
+    pub fn zoom(&mut self) {
+        let zoom_in = is_key_down(KeyCode::Q);
+        let zoom_out = is_key_down(KeyCode::E);
+        if zoom_in && !zoom_out {
+            self.screen_size_meters *= ZOOM_VELOCITY;
+        } else if zoom_out && !zoom_in {
+            self.screen_size_meters /= ZOOM_VELOCITY;
+        }
+    }
+
+    pub fn update_locked(&mut self, system: &Vec<Particle>, to_switch: usize) {
+        let reset = is_key_down(KeyCode::R);
+        let reset = is_key_down(KeyCode::R);
+        if reset {
+            self.screen_size_meters = AU;
+            self.center_meters = DVec2::ZERO;
+        } else {
+            self.zoom();
+            self.center_meters = system[to_switch].position;
         }
     }
 }
@@ -144,4 +172,55 @@ pub fn cross(screen_values: &ScreenValues) {
         1.,
         Color::from_rgba(255, 0, 0, 120),
     );
+}
+
+pub fn render_call(
+    trails: bool,
+    screen_values: &mut ScreenValues,
+    system: &mut Vec<Particle>,
+    init_output: &ConfigValues,
+    important_bodies_added: usize,
+    mut trail_point_counter: &mut usize,
+    mut trail_values: &mut Vec<Vec<(DVec2, Color)>>,
+) {
+
+
+    if is_key_released(KeyCode::Right) {
+        if let Mode::Locked(Planet(id)) = screen_values.mode {
+            screen_values.mode = Mode::Locked(Planet((id + 1) % system.len()));
+        }
+    }
+    if is_key_released(KeyCode::Left) {
+        if let Mode::Locked(Planet(id)) = screen_values.mode {
+            let new_idx = if id == 0 { system.len() - 1 } else { id - 1 };
+            screen_values.mode = Mode::Locked(Planet(new_idx));
+        }
+    }
+
+    match screen_values.mode {
+        Mode::Free => screen_values.update_free(),
+        Mode::Locked(Planet(id)) => screen_values.update_locked(system, id),
+    }
+    // Draws main bodies
+    draw_bodies(&system, &screen_values);
+    cross(&screen_values);
+    if is_key_released(KeyCode::Tab) {
+        screen_values.mode = match screen_values.mode {
+            Mode::Free => Mode::Locked(Planet(0)),
+            Mode::Locked(_) => Mode::Free,
+        };
+    }
+    if trails {
+        draw_trails(
+            important_bodies_added,
+            &system,
+            &mut trail_point_counter,
+            &mut trail_values,
+            init_output.color_vel_range.0 as f32,
+            init_output.color_vel_range.1 as f32,
+            &init_output,
+            &screen_values,
+        );
+    }
+
 }

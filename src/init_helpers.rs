@@ -1,5 +1,5 @@
 use crate::constants::*;
-use crate::helpers::{Particle, calculate_orbital_speed, get_number_from_user};
+use crate::helpers::{Particle, calculate_orbital_speed, get_number_from_user, take_user_choice};
 use crate::horizon::get_horizons_data;
 use crate::horizons_table::*;
 use crate::init_helpers::CenterObjectValues::CenterObjectExists;
@@ -154,13 +154,13 @@ pub fn initialize_from_scenario(
             let bodies_values_delta = initialize_solar_system(system);
             total_bodies_added += bodies_values_delta.0;
             important_bodies_added += bodies_values_delta.1;
-            years_of_writing = YEARS_OF_WRITING_SPIRO;
+            years_of_writing = YEARS_OF_WRITING_SOLAR_SYSTEM;
             ticks_per_frame = TICKS_PER_FRAME_SOLAR_SYSTEM;
             sim_seconds_per_frame = SOLAR_SYS_SECONDS_PER_FRAME;
             trail_length = OLD_FRAME_LIMIT_SOLAR_SYS;
 
             minimum_speed_color = system[8].velocity.length().log10();
-            maximum_speed_color = system[0].velocity.length().log10();
+            maximum_speed_color = system[1].velocity.length().log10();
             screen_values.initialize(SCREEN_SIZE_PIXELS, SCREEN_SIZE_SOLAR_SYS_METERS);
         }
 
@@ -204,14 +204,15 @@ pub fn initialize_bodies_spiro(
     let mut num_important_bodies_added = 0;
     let mut bodies_added = 0;
 
-    if let Variance::WithVariance(min_variance, max_variance) = orbital_radius_variance {
-        orbital_radius_actual = *orbital_radius * gen_range(min_variance, max_variance);
-    }
-    if let Variance::WithVariance(min_variance, max_variance) = mass_variance {
-        mass_actual = *mass * gen_range(min_variance, max_variance);
-    }
+
 
     for i in 0..*bodies_to_add {
+        if let Variance::WithVariance(min_variance, max_variance) = orbital_radius_variance {
+            orbital_radius_actual = *orbital_radius * gen_range(min_variance, max_variance);
+        }
+        if let Variance::WithVariance(min_variance, max_variance) = mass_variance {
+            mass_actual = *mass * gen_range(min_variance, max_variance);
+        }
         let angular_position: f64 =
             (TAU * i as f64 + initial_angular_offset) / *bodies_to_add as f64;
         let body_x_position: f64 = angular_position.cos() * orbital_radius_actual;
@@ -299,12 +300,37 @@ pub fn initialize_solar_system(system: &mut Vec<Particle>) -> (usize, usize) {
                 km_per_s_to_meters_per_second(value.vx),
                 km_per_s_to_meters_per_second(value.vy),
             ),
-            color: HORIZONS_COLORS[&value.name],
+            color: HORIZONS_COLORS.get(&value.name).copied().unwrap_or(GRAY),
             name: value.name.clone(),
         };
         system.push(new_body);
     }
-    (horizons_values.len(), horizons_values.len())
+
+    let mut asteroids_added = 0;
+
+    if take_user_choice("Add fake asteroids? ") {
+        asteroids_added += initialize_bodies_spiro(
+            &1200,
+            &system.len(),
+            &(2.5 * AU),
+            &10e12,
+            &LIGHTGRAY,
+            &(25e5),
+            &1.,
+            system,
+            &0.,
+            Variance::WithVariance(0.8, 1.8),
+            Variance::WithVariance(0.8, 1.2),
+            &CenterObjectExists(system[0].mass, system[0].position),
+            "Asteroids",
+        )
+        .0
+    }
+
+    (
+        horizons_values.len() + asteroids_added,
+        horizons_values.len(),
+    )
 }
 
 fn km_to_meters(distance_km: f64) -> f64 {

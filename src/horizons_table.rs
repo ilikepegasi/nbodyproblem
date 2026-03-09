@@ -37,7 +37,7 @@ pub static HORIZONS_COLORS: phf::Map<&str, Color> = phf::phf_map! {
 };
 
 pub static MAJOR_BODIES: [&str; 16] = [
-    "mercury", "sun", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "luna",
+    "sun", "mercury", "venus", "earth", "mars", "jupiter", "saturn", "uranus", "neptune", "luna",
     "ganymede", "titan", "callisto", "io", "europa", "triton",
 ];
 
