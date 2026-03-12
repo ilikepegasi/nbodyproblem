@@ -6,6 +6,7 @@ use macroquad::color::{Color, RED};
 use macroquad::input::{is_key_down, is_key_released};
 use macroquad::math::{DVec2, Vec2};
 use macroquad::prelude::{KeyCode, draw_circle, draw_line};
+use macroquad::text::draw_text;
 use std::any::Any;
 use std::string::ToString;
 
@@ -77,7 +78,6 @@ impl ScreenValues {
 
     pub fn update_locked(&mut self, system: &Vec<Particle>, to_switch: usize) {
         let reset = is_key_down(KeyCode::R);
-        let reset = is_key_down(KeyCode::R);
         if reset {
             self.screen_size_meters = AU;
             self.center_meters = DVec2::ZERO;
@@ -95,14 +95,25 @@ pub fn meters_to_pixel(distance: f64, screen_values: &ScreenValues) -> f32 {
 pub fn draw_bodies(system: &Vec<Particle>, screen_values: &ScreenValues) {
     for i in 0..system.len() {
         let screen_position = screen_values.physical_pos_to_screen_coords(system[i].position);
-        let visible_radius_calculated = system[i].generate_visible_radius();
+        let visible_radius_calculated = system[i]
+            .generate_visible_radius()
+            .max(meters_to_pixel(system[i].radius, screen_values));
 
         draw_circle(
             screen_position.x,
             screen_position.y,
-            visible_radius_calculated.max(meters_to_pixel(system[i].radius, screen_values)),
+            visible_radius_calculated,
             system[i].color,
         );
+        if is_key_down(KeyCode::F) {
+            draw_text(
+                system[i].name.as_str(),
+                visible_radius_calculated + screen_position.x + 5.,
+                screen_position.y,
+                24.,
+                system[i].color,
+            );
+        }
     }
 }
 
@@ -136,7 +147,6 @@ pub fn draw_trails(
             if j != gap_point {
                 let pos_1 = trail_values[i][j].0;
                 let pos_2 = trail_values[i][(j + 1) % init_output.trail_length].0;
-                if ((pos_2 - pos_1).length() as f32) < MAX_TRAIL_LINE_LEN {
                     let screen_pos_1 = screen_values.physical_pos_to_screen_coords(pos_1);
                     let screen_pos_2 = screen_values.physical_pos_to_screen_coords(pos_2);
 
@@ -148,7 +158,7 @@ pub fn draw_trails(
                         TRAIL_RADIUS,
                         trail_values[i][j].1,
                     );
-                }
+
             }
         }
     }
@@ -183,8 +193,6 @@ pub fn render_call(
     mut trail_point_counter: &mut usize,
     mut trail_values: &mut Vec<Vec<(DVec2, Color)>>,
 ) {
-
-
     if is_key_released(KeyCode::Right) {
         if let Mode::Locked(Planet(id)) = screen_values.mode {
             screen_values.mode = Mode::Locked(Planet((id + 1) % system.len()));
@@ -222,5 +230,4 @@ pub fn render_call(
             &screen_values,
         );
     }
-
 }

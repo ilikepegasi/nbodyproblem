@@ -57,7 +57,7 @@ pub fn get_horizons_data() -> Vec<OutputValues> {
         false
     };
     if !can_use_cached_file {
-        println!("No cached files found, retrieving new data");
+        println!("Incomplete cache, retrieving new data");
     }
 
     for body in MAJOR_BODIES.iter() {
@@ -91,18 +91,12 @@ fn parse_horizons_body_data(body_result: String, body_name: String) -> OutputVal
         vx: 0.0,
         vy: 0.0,
     };
-    let data_start = ephemeris_lines.len() / 2;
-    let data_end = ephemeris_lines.len();
-    for data_line_id in data_start..data_end {
-        let relative_line_id = data_line_id - data_start;
-        if relative_line_id == 1 {
-            body_values.x = parse_data_component("X", ephemeris_lines[data_line_id]);
-            body_values.y = parse_data_component("Y", ephemeris_lines[data_line_id]);
-        } else if relative_line_id == 2 {
-            body_values.vx = parse_data_component("VX", ephemeris_lines[data_line_id]);
-            body_values.vy = parse_data_component("VY", ephemeris_lines[data_line_id]);
-        }
-    }
+    let n = ephemeris_lines.len();
+    body_values.x  = parse_data_component("X",  ephemeris_lines[n - 2]);
+    body_values.y  = parse_data_component("Y",  ephemeris_lines[n - 2]);
+    body_values.vx = parse_data_component("VX", ephemeris_lines[n - 1]);
+    body_values.vy = parse_data_component("VY", ephemeris_lines[n - 1]);
+
 
     body_values
 }
@@ -122,10 +116,11 @@ fn parse_data_component(req_value: &str, line: &str) -> f64 {
 
 fn date_time_range() -> (String, String) {
     let now = Utc::now();
-    let yesterday = now - chrono::Duration::days(1);
+    let start = now - chrono::Duration::days(2);
+    let stop = now - chrono::Duration::days(1);
     (
-        yesterday.date_naive().to_string(),
-        now.date_naive().to_string(),
+        start.date_naive().to_string(),
+        stop.date_naive().to_string(),
     )
 }
 
@@ -203,7 +198,6 @@ mod tests {
         println!("{:?}", result);
     }
 
-
     #[test]
     fn test_parse_radius_debug() {
         // change body name to whichever is failing
@@ -212,7 +206,7 @@ mod tests {
             // print just the physical properties section
             let start = text.find("Physical").or_else(|| text.find("PHYSICAL"));
             if let Some(s) = start {
-                println!("{}", &text[s..s+500]);
+                println!("{}", &text[s..s + 500]);
             } else {
                 println!("No physical section found, printing start:");
                 println!("{}", &text[..500]);
@@ -233,5 +227,4 @@ mod tests {
             }
         }
     }
-
 }

@@ -14,7 +14,7 @@ mod render;
 use helpers::*;
 use init_helpers::*;
 use render::*;
-
+// TODO: Fix the small moons borking themselves
 fn gravity_conf() -> Conf {
     Conf {
         window_title: "Gravity_Sim".to_owned(),
@@ -171,8 +171,6 @@ async fn main() {
                 seconds_passed_in_sim += dt;
             }
         }
-
-
 
         let years_passed_in_sim: String = (seconds_passed_in_sim / SECONDS_IN_YEAR).to_string();
         let mut info_on_screen = format!(

@@ -41,7 +41,7 @@ pub const TICKS_PER_FRAME_FIG8: usize = 120; //divide by zero error if 1 IDK why
 
 pub const TICKS_PER_FRAME_SPIRO: usize = 20; //divide by zero error if 1 IDK why
 
-pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 20; //divide by zero error if 1 IDK why
+pub const TICKS_PER_FRAME_SOLAR_SYSTEM: usize = 300; //divide by zero error if 1 IDK why
 pub const EARTH_NUMBER_MAX: usize = 600;
 pub const EPSILON: f64 = COMET_RADIUS;
 pub const COLLIDED_POSITION: DVec2 =

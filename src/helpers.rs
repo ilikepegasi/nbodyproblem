@@ -222,7 +222,7 @@ pub fn add_topline_data(system: &Vec<Particle>, wtr: &mut Writer<File>) -> io::R
     newline[2] = String::from("Gravitational Potential Energy");
     newline[3] = String::from("Total Energy");
     newline[4] = String::from("X Momentum");
-    newline[4] = String::from("Y Momentum");
+    newline[5] = String::from("Y Momentum");
 
     for i in 0..system.len() {
         newline[COLUMNS_PER_OBJECT * i + LEFT_PAD] = String::from("X".to_string());

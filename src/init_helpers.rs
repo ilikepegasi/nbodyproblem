@@ -204,8 +204,6 @@ pub fn initialize_bodies_spiro(
     let mut num_important_bodies_added = 0;
     let mut bodies_added = 0;
 
-
-
     for i in 0..*bodies_to_add {
         if let Variance::WithVariance(min_variance, max_variance) = orbital_radius_variance {
             orbital_radius_actual = *orbital_radius * gen_range(min_variance, max_variance);
